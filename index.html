@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terminal Głosowania</title>
     <style>
-        body { background: #2c3e50; color: white; font-family: sans-serif; text-align: center; padding: 20px; }
-        h2 { margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; }
+        body { background: #fdfdfd; color: #2c3e50; font-family: sans-serif; text-align: center; padding: 20px; }
+        h2 { margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px; color: #333; }
         .btn { display: block; width: 100%; max-width: 400px; padding: 25px; margin: 15px auto; font-size: 1.4rem; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; }
         .btn-za { background: #27ae60; }
         .btn-przeciw { background: #c0392b; }
         .btn-wstrzymuje { background: #f1c40f; color: black; }
-        .btn-default { background: #34495e; border: 1px solid #7f8c8d; }
-        .btn:disabled { background: #7f8c8d !important; cursor: not-allowed; opacity: 0.5; }
-        #msg { margin-top: 20px; font-style: italic; color: #bdc3c7; }
+        .btn-default { background: #7f8c8d; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        #msg { margin-top: 20px; font-style: italic; color: #7f8c8d; }
     </style>
 </head>
 <body>
@@ -42,6 +42,13 @@
             const data = snap.data();
             if(!data) return;
 
+            if(data.status === "zamkniete") {
+                document.getElementById('title').innerText = "Głosowanie zakończone";
+                document.getElementById('btns').innerHTML = "";
+                document.getElementById('msg').innerText = "Nie można już oddawać głosów.";
+                return;
+            }
+
             document.getElementById('title').innerText = data.tytul;
             const div = document.getElementById('btns');
             div.innerHTML = "";
@@ -52,44 +59,32 @@
                 return;
             }
 
-            // Pobranie kluczy (opcji głosowania)
-            const wynikiKeys = Object.keys(data.wyniki || {});
-
-            // Definicja stałej kolejności
-            const porzadek = ["ZA", "PRZECIW", "WSTRZYM"];
-
-            // Sortowanie kluczy wg powyższej listy
-            wynikiKeys.sort((a, b) => {
-                const indexA = porzadek.findIndex(p => a.toUpperCase().includes(p));
-                const indexB = porzadek.findIndex(p => b.toUpperCase().includes(p));
-                return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+            const order = ["ZA", "PRZECIW", "WSTRZYM"];
+            const keys = Object.keys(data.wyniki || {}).sort((a,b) => {
+                let iA = order.findIndex(l => a.toUpperCase().includes(l));
+                let iB = order.findIndex(l => b.toUpperCase().includes(l));
+                return (iA===-1?99:iA) - (iB===-1?99:iB);
             });
 
-            wynikiKeys.forEach(key => {
+            keys.forEach(key => {
                 const b = document.createElement('button');
                 b.innerText = key;
-                const upper = key.toUpperCase();
-                
                 let c = "btn-default";
-                if(upper.includes("ZA")) c = "btn-za";
-                else if(upper.includes("PRZECIW")) c = "btn-przeciw";
-                else if(upper.includes("WSTRZYM")) c = "btn-wstrzymuje";
-                
+                const u = key.toUpperCase();
+                if(u.includes("ZA")) c = "btn-za";
+                else if(u.includes("PRZECIW")) c = "btn-przeciw";
+                else if(u.includes("WSTRZYM")) c = "btn-wstrzymuje";
                 b.className = "btn " + c;
-                
+
                 if(localStorage.getItem('voted')) {
                     b.disabled = true;
                     document.getElementById('msg').innerText = "Głos już oddany.";
                 }
 
                 b.onclick = async () => {
-                    try {
-                        await updateDoc(docRef, { [`wyniki.${key}`]: increment(1) });
-                        localStorage.setItem('voted', 'true');
-                        location.reload(); 
-                    } catch (e) {
-                        alert("Błąd połączenia.");
-                    }
+                    await updateDoc(docRef, { [`wyniki.${key}`]: increment(1) });
+                    localStorage.setItem('voted', 'true');
+                    location.reload(); 
                 };
                 div.appendChild(b);
             });
