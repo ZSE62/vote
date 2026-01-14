@@ -5,7 +5,7 @@
     <title>System Wyników Sejmowych</title>
     <style>
         body { 
-            background: #f0f0f0; 
+            background: white; 
             color: #000; 
             font-family: "Times New Roman", Times, serif; 
             display: flex;
@@ -15,12 +15,9 @@
             margin: 0;
         }
         .sejm-board {
-            background: white;
             width: 80%;
             max-width: 900px;
             padding: 50px;
-            border: 15px solid #1a1a1a; /* Ramka monitora */
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
         }
         .header {
             font-size: 2.5rem;
@@ -35,33 +32,30 @@
             justify-content: space-between;
             align-items: center;
             margin: 35px 0;
-            font-size: 3.5rem; /* Bardzo duży tekst */
+            font-size: 3.5rem;
             font-weight: bold;
             text-transform: uppercase;
         }
         .total-row {
-            border-bottom: 4px solid #000;
             margin-bottom: 80px;
             padding-bottom: 10px;
         }
         .label { flex: 1; }
         .val { width: 250px; text-align: right; }
-        
-        /* Ukrywamy paski postępu, bo na zdjęciu ich nie ma */
-        .bar-container { display: none; }
+        #waiting { font-size: 2rem; color: #777; text-align: center; font-style: italic; }
     </style>
 </head>
 <body>
     <div class="sejm-board">
-        <div class="header" id="title">GŁOSOWANIE</div>
-        
-        <div class="row total-row">
-            <div class="label">GŁOSOWAŁO</div>
-            <div class="val" id="total">0</div>
-        </div>
-
-        <div id="results">
+        <div id="content" style="display:none;">
+            <div class="header" id="title">GŁOSOWANIE</div>
+            <div class="row total-row">
+                <div class="label">GŁOSOWAŁO</div>
+                <div class="val" id="total">0</div>
             </div>
+            <div id="results"></div>
+        </div>
+        <div id="waiting">Oczekiwanie na zakończenie głosowania...</div>
     </div>
 
     <script type="module">
@@ -84,36 +78,31 @@
             const data = snap.data();
             if(!data) return;
             
-            // Ustawiamy tytuł (np. GŁOSOWANIE NR 134)
-            document.getElementById('title').innerText = data.tytul.toUpperCase();
-            
-            const resDiv = document.getElementById('results');
-            resDiv.innerHTML = "";
-            
-            const wynikiEntries = Object.entries(data.wyniki || {});
-            let total = Object.values(data.wyniki || {}).reduce((a, b) => a + b, 0);
-            
-            document.getElementById('total').innerText = total;
+            if(data.status === "zamkniete") {
+                document.getElementById('waiting').style.display = "none";
+                document.getElementById('content').style.display = "block";
+                
+                document.getElementById('title').innerText = data.tytul.toUpperCase();
+                const resDiv = document.getElementById('results');
+                resDiv.innerHTML = "";
+                
+                let total = Object.values(data.wyniki || {}).reduce((a, b) => a + b, 0);
+                document.getElementById('total').innerText = total;
 
-            // Sortujemy tak, aby ZA było na górze, potem PRZECIW, potem reszta
-            wynikiEntries.sort((a, b) => {
                 const order = ["ZA", "PRZECIW", "WSTRZYM"];
-                let indexA = order.findIndex(label => a[0].toUpperCase().includes(label));
-                let indexB = order.findIndex(label => b[0].toUpperCase().includes(label));
-                return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
-            });
+                const entries = Object.entries(data.wyniki || {}).sort((a,b) => {
+                    let iA = order.findIndex(l => a[0].toUpperCase().includes(l));
+                    let iB = order.findIndex(l => b[0].toUpperCase().includes(l));
+                    return (iA===-1?99:iA) - (iB===-1?99:iB);
+                });
 
-            wynikiEntries.forEach(([key, val]) => {
-                let displayKey = key.toUpperCase();
-                // Poprawka dla "WSTRZYMUJE SIĘ" aby wyglądało jak w Sejmie
-                if(displayKey.includes("WSTRZYM")) displayKey = "WSTRZYMAŁO SIĘ";
-
-                resDiv.innerHTML += `
-                    <div class="row">
-                        <div class="label">${displayKey}</div>
-                        <div class="val">${val}</div>
-                    </div>`;
-            });
+                entries.forEach(([key, val]) => {
+                    resDiv.innerHTML += `<div class="row"><div class="label">${key.toUpperCase()}</div><div class="val">${val}</div></div>`;
+                });
+            } else {
+                document.getElementById('waiting').style.display = "block";
+                document.getElementById('content').style.display = "none";
+            }
         });
     </script>
 </body>
