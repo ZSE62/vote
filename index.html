@@ -46,20 +46,30 @@
             const div = document.getElementById('btns');
             div.innerHTML = "";
 
-            // Resetowanie blokady głosu, gdy administrator wyczyści system
             if(data.tryb === "reset") {
                 localStorage.removeItem('voted');
                 document.getElementById('msg').innerText = "System gotowy.";
                 return;
             }
 
+            // Pobranie kluczy (opcji głosowania)
             const wynikiKeys = Object.keys(data.wyniki || {});
+
+            // Definicja stałej kolejności
+            const porzadek = ["ZA", "PRZECIW", "WSTRZYM"];
+
+            // Sortowanie kluczy wg powyższej listy
+            wynikiKeys.sort((a, b) => {
+                const indexA = porzadek.findIndex(p => a.toUpperCase().includes(p));
+                const indexB = porzadek.findIndex(p => b.toUpperCase().includes(p));
+                return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+            });
+
             wynikiKeys.forEach(key => {
                 const b = document.createElement('button');
                 b.innerText = key;
                 const upper = key.toUpperCase();
                 
-                // Przypisanie kolorów na podstawie nazwy przycisku
                 let c = "btn-default";
                 if(upper.includes("ZA")) c = "btn-za";
                 else if(upper.includes("PRZECIW")) c = "btn-przeciw";
@@ -67,7 +77,6 @@
                 
                 b.className = "btn " + c;
                 
-                // Blokada jeśli już głosowano w tej turze
                 if(localStorage.getItem('voted')) {
                     b.disabled = true;
                     document.getElementById('msg').innerText = "Głos już oddany.";
@@ -75,7 +84,6 @@
 
                 b.onclick = async () => {
                     try {
-                        // Aktualizacja pola w obiekcie Map w Firestore
                         await updateDoc(docRef, { [`wyniki.${key}`]: increment(1) });
                         localStorage.setItem('voted', 'true');
                         location.reload(); 
