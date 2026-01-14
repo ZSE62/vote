@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>System Wyników Sejmowych</title>
+    <style>
+        body { background: #000; color: #fff; font-family: 'Courier New', monospace; padding: 30px; }
+        h1 { border-bottom: 2px solid #fff; padding-bottom: 10px; color: #00ffff; text-transform: uppercase; }
+        .row { display: flex; align-items: center; margin: 20px 0; font-size: 1.8rem; }
+        .label { width: 300px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .bar-bg { flex-grow: 1; background: #222; height: 40px; border: 1px solid #fff; margin: 0 20px; }
+        .bar { height: 100%; transition: width 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); width: 0%; }
+        .val { width: 100px; text-align: right; font-weight: bold; }
+        
+        .color-za { background: #00ff00; box-shadow: 0 0 10px #00ff00; }
+        .color-przeciw { background: #ff0000; box-shadow: 0 0 10px #ff0000; }
+        .color-wstrzymuje { background: #ffff00; box-shadow: 0 0 10px #ffff00; }
+        .color-default { background: #00ffff; box-shadow: 0 0 10px #00ffff; }
+        
+        #total { font-size: 2.5rem; margin-top: 40px; border-top: 2px solid #fff; padding-top: 20px; color: #00ffff; }
+    </style>
+</head>
+<body>
+    <h1 id="title">Łączenie z systemem...</h1>
+    <div id="results"></div>
+    <div id="total">SUMA ODDANYCH GŁOSÓW: 0</div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM",
+            authDomain: "votelive-f469d.firebaseapp.com",
+            projectId: "votelive-f469d",
+            storageBucket: "votelive-f469d.firebasestorage.app",
+            messagingSenderId: "959356764271",
+            appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        onSnapshot(doc(db, "ankiet", "vote"), (snap) => {
+            const data = snap.data();
+            if(!data) return;
+            
+            document.getElementById('title').innerText = data.tytul;
+            const resDiv = document.getElementById('results');
+            resDiv.innerHTML = "";
+            
+            const wynikiEntries = Object.entries(data.wyniki || {});
+            let total = Object.values(data.wyniki || {}).reduce((a, b) => a + b, 0);
+            document.getElementById('total').innerText = "SUMA ODDANYCH GŁOSÓW: " + total;
+
+            wynikiEntries.forEach(([key, val]) => {
+                let colorClass = "color-default";
+                const upperKey = key.toUpperCase();
+                if(upperKey.includes("ZA")) colorClass = "color-za";
+                else if(upperKey.includes("PRZECIW")) colorClass = "color-przeciw";
+                else if(upperKey.includes("WSTRZYM")) colorClass = "color-wstrzymuje";
+
+                const proc = total > 0 ? (val / total * 100) : 0;
+                resDiv.innerHTML += `
+                    <div class="row">
+                        <div class="label">${key}</div>
+                        <div class="bar-bg"><div class="bar ${colorClass}" style="width:${proc}%"></div></div>
+                        <div class="val">${val}</div>
+                    </div>`;
+            });
+        });
+    </script>
+</body>
+</html>
