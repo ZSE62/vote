@@ -4,41 +4,35 @@
     <meta charset="UTF-8">
     <title>Panel Sterowania Głosowaniem</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: white; padding: 20px; }
-        .box { max-width: 450px; margin: auto; background: #333; padding: 25px; border-radius: 10px; border: 1px solid #555; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: none; font-size: 1rem; }
-        button { background: #007bff; color: white; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #0056b3; }
-        .reset { background: #c0392b; margin-top: 20px; }
-        .reset:hover { background: #a93226; }
-        label { font-size: 0.9rem; color: #bbb; }
+        body { font-family: sans-serif; background: #fdfdfd; color: #333; padding: 20px; }
+        .box { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 10px; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem; }
+        button { background: #007bff; color: white; font-weight: bold; cursor: pointer; border: none; }
+        .stop { background: #e67e22; }
+        .reset { background: #c0392b; }
+        .counter { font-size: 1.2rem; text-align: center; margin: 15px 0; font-weight: bold; color: #27ae60; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>Konfiguracja Głosowania</h2>
-        <label>Temat głosowania:</label>
-        <input type="text" id="tytul" placeholder="np. Wybór Przewodniczącego">
+        <h2>Sterowanie</h2>
+        <div class="counter">ODDANYCH GŁOSÓW: <span id="liveCount">0</span></div>
         
-        <label>Typ przycisków:</label>
+        <input type="text" id="tytul" placeholder="Temat głosowania">
         <select id="tryb" onchange="document.getElementById('osobyDiv').style.display = this.value=='osoby'?'block':'none'">
             <option value="tak_nie">ZA / PRZECIW / WSTRZYM.</option>
-            <option value="osoby">LISTA NAZWISK / OPCJI</option>
+            <option value="osoby">LISTA NAZWISK</option>
         </select>
-
-        <div id="osobyDiv" style="display:none;">
-            <label>Opcje (rozdziel przecinkiem):</label>
-            <input type="text" id="listaOsob" placeholder="Jan Kowalski, Anna Nowak, Piotr Szulc">
-        </div>
+        <div id="osobyDiv" style="display:none;"><input type="text" id="listaOsob" placeholder="Opcje po przecinku"></div>
 
         <button onclick="uruchom()">URUCHOM GŁOSOWANIE</button>
-        <button class="reset" onclick="resetuj()">ZAKOŃCZ I ZERUJ SYSTEM</button>
-        <button style="background: #27ae60; margin-top: 10px;" onclick="pobierzWyniki()">POBIERZ WYNIKI (TXT)</button>
+        <button class="stop" onclick="zamknij()">ZAMKNIJ I POBIERZ RAPORT</button>
+        <button class="reset" onclick="resetuj()">RESETUJ SYSTEM</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM",
@@ -51,60 +45,48 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const docRef = doc(db, "ankiet", "vote");
+
+        // Licznik na żywo
+        onSnapshot(docRef, (snap) => {
+            const data = snap.data();
+            if(data && data.wyniki) {
+                const total = Object.values(data.wyniki).reduce((a, b) => a + b, 0);
+                document.getElementById('liveCount').innerText = total;
+            }
+        });
 
         window.uruchom = async () => {
             const t = document.getElementById('tytul').value || "Głosowanie";
             const tryb = document.getElementById('tryb').value;
-            let w = {};
-            if(tryb === 'tak_nie') {
-                w = { "ZA": 0, "PRZECIW": 0, "WSTRZYMUJE SIĘ": 0 };
-            } else {
-                const lista = document.getElementById('listaOsob').value.split(',');
-                lista.forEach(o => { if(o.trim()) w[o.trim()] = 0; });
-            }
-            // setDoc nadpisuje całą strukturę w bazie zgodnie z tym co wybierzesz
-            await setDoc(doc(db, "ankiet", "vote"), { tytul: t, wyniki: w, tryb: tryb });
-            alert("Głosowanie zostało wysłane na urządzenia!");
+            let w = tryb === 'tak_nie' ? { "ZA": 0, "PRZECIW": 0, "WSTRZYMUJE SIĘ": 0 } : {};
+            if(tryb === 'osoby') document.getElementById('listaOsob').value.split(',').forEach(o => { if(o.trim()) w[o.trim()] = 0; });
+            
+            await setDoc(docRef, { tytul: t, wyniki: w, tryb: tryb, status: "otwarte" });
+            alert("Głosowanie uruchomione!");
         };
+
+        window.zamknij = async () => {
+            await updateDoc(docRef, { status: "zamkniete" });
+            pobierzRaport();
+        };
+
+        async function pobierzRaport() {
+            const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
+            const snap = await getDoc(docRef);
+            const data = snap.data();
+            let tekst = `RAPORT: ${data.tytul}\n\n`;
+            Object.entries(data.wyniki).forEach(([k, v]) => tekst += `${k}: ${v}\n`);
+            const blob = new Blob([tekst], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `wyniki.txt`;
+            a.click();
+        }
 
         window.resetuj = async () => {
-            if(confirm("Czy na pewno chcesz wyczyścić bazę i zresetować telefony?")) {
-                await setDoc(doc(db, "ankiet", "vote"), { tytul: "Oczekiwanie na prowadzącego...", wyniki: {}, tryb: "reset" });
-            }
+            if(confirm("Reset?")) await setDoc(docRef, { tytul: "Oczekiwanie...", wyniki: {}, tryb: "reset", status: "reset" });
         };
-        window.pobierzWyniki = async () => {
-    const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
-    const docSnap = await getDoc(doc(db, "ankiet", "vote"));
-    
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        const tytul = data.tytul || "Głosowanie";
-        const wyniki = data.wyniki || {};
-        let suma = 0;
-        
-        let tekst = `RAPORT Z GŁOSOWANIA\n`;
-        tekst += `TEMAT: ${tytul.toUpperCase()}\n`;
-        tekst += `--------------------------\n`;
-        
-        // Sortowanie i dodawanie wyników do tekstu
-        Object.entries(wyniki).forEach(([opcja, ilosc]) => {
-            tekst += `${opcja.toUpperCase()}: ${ilosc}\n`;
-            suma += ilosc;
-        });
-        
-        tekst += `--------------------------\n`;
-        tekst += `ŁĄCZNIE ODDANYCH GŁOSÓW: ${suma}\n`;
-        tekst += `DATA GENEROWANIA: ${new Date().toLocaleString()}\n`;
-
-        const blob = new Blob([tekst], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `wyniki_${tytul.replace(/\s+/g, '_')}.txt`;
-        a.click();
-    }
-};
     </script>
 </body>
-
 </html>
