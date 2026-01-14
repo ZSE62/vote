@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>System Wyników Sejmowych</title>
+    <title>Wyniki Głosowania</title>
     <style>
         body { 
             background: white; 
@@ -14,48 +14,41 @@
             height: 100vh;
             margin: 0;
         }
-        .sejm-board {
-            width: 80%;
-            max-width: 900px;
-            padding: 50px;
-        }
+        .sejm-board { width: 85%; max-width: 1000px; padding: 40px; }
         .header {
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             text-align: center;
             font-weight: bold;
             text-transform: uppercase;
-            margin-bottom: 60px;
-            letter-spacing: 2px;
+            padding-bottom: 20px;
+            margin-bottom: 50px;
+            border-bottom: 5px solid #000; /* Ta czarna krecha pod tytułem */
         }
         .row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 35px 0;
-            font-size: 3.5rem;
+            margin: 30px 0;
+            font-size: 3.8rem;
             font-weight: bold;
             text-transform: uppercase;
         }
-        .total-row {
-            margin-bottom: 80px;
-            padding-bottom: 10px;
-        }
         .label { flex: 1; }
         .val { width: 250px; text-align: right; }
-        #waiting { font-size: 2rem; color: #777; text-align: center; font-style: italic; }
+        #waiting { font-size: 2rem; color: #aaa; text-align: center; font-style: italic; }
     </style>
 </head>
 <body>
     <div class="sejm-board">
         <div id="content" style="display:none;">
             <div class="header" id="title">GŁOSOWANIE</div>
-            <div class="row total-row">
+            <div class="row" style="color: #444; font-size: 3rem; margin-bottom: 60px;">
                 <div class="label">GŁOSOWAŁO</div>
                 <div class="val" id="total">0</div>
             </div>
             <div id="results"></div>
         </div>
-        <div id="waiting">Oczekiwanie na zakończenie głosowania...</div>
+        <div id="waiting">Głosowanie w toku... Proszę czekać na wyniki.</div>
     </div>
 
     <script type="module">
@@ -81,11 +74,10 @@
             if(data.status === "zamkniete") {
                 document.getElementById('waiting').style.display = "none";
                 document.getElementById('content').style.display = "block";
-                
                 document.getElementById('title').innerText = data.tytul.toUpperCase();
+                
                 const resDiv = document.getElementById('results');
                 resDiv.innerHTML = "";
-                
                 let total = Object.values(data.wyniki || {}).reduce((a, b) => a + b, 0);
                 document.getElementById('total').innerText = total;
 
