@@ -47,7 +47,13 @@
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
-        let userFullInfo = null;
+        let userFullInfo = localStorage.getItem("zalogowanyRadny");
+
+        if (userFullInfo) {
+            document.getElementById('loginArea').style.display = "none";
+            document.getElementById('voteArea').style.display = "block";
+            startApp();
+        }
 
         window.zaloguj = async () => {
             const code = document.getElementById('accessCode').value.trim();
@@ -58,9 +64,12 @@
             if(vSnap.data().lista_lock) return alert("Lista obecności zablokowana.");
 
             userFullInfo = cSnap.data().nazwisko;
-            if(vSnap.data().obecni?.includes(userFullInfo)) return alert("Już zalogowano!");
+            localStorage.setItem("zalogowanyRadny", userFullInfo);
 
-            await updateDoc(docRef, { obecni: arrayUnion(userFullInfo) });
+            if(!vSnap.data().obecni?.includes(userFullInfo)) {
+                await updateDoc(docRef, { obecni: arrayUnion(userFullInfo) });
+            }
+
             document.getElementById('loginArea').style.display = "none";
             document.getElementById('voteArea').style.display = "block";
             startApp();
@@ -69,10 +78,8 @@
         function startApp() {
             onSnapshot(docRef, (snap) => {
                 const data = snap.data();
-                if(!data) return;
-
-                // NAPRAWA BŁĘDU: Wylogowanie jeśli usunięto z obecnych lub zamknięto sesję
-                if (data.status === "reset_wszystkich" || !data.obecni?.includes(userFullInfo)) {
+                if(!data || data.status === "reset_wszystkich" || !data.obecni?.includes(userFullInfo)) {
+                    localStorage.removeItem("zalogowanyRadny");
                     location.reload();
                     return;
                 }
@@ -81,15 +88,13 @@
                 const titleEl = document.getElementById('title');
                 const msgEl = document.getElementById('msg');
 
-                // Jeśli głosowanie nie jest "otwarte"
                 if(data.status !== "otwarte") {
-                    titleEl.innerText = "SESJA W TOKU"; // Zamiast starego tytułu
+                    titleEl.innerText = "SESJA W TOKU";
                     msgEl.innerText = "Oczekiwanie na następne głosowanie...";
                     div.innerHTML = "";
                     return;
                 }
 
-                // Tryb aktywnego głosowania
                 titleEl.innerText = data.tytul;
                 const safeName = userFullInfo.replace(/[.#$/[\]]/g, "");
                 const juzGlosowal = data.lista_glosow && data.lista_glosow[safeName];
@@ -97,7 +102,10 @@
                 div.innerHTML = "";
                 let keys = Object.keys(data.wyniki || {});
                 const order = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"];
-                keys.sort((a,b) => order.indexOf(a) - order.indexOf(b));
+                keys.sort((a,b) => {
+                    let idxA = order.indexOf(a); let idxB = order.indexOf(b);
+                    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+                });
 
                 keys.forEach(key => {
                     const b = document.createElement('button');
