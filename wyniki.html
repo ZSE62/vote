@@ -8,12 +8,11 @@
         .monitor { width: 850px; }
         .header { font-size: 36px; text-align: center; text-transform: uppercase; font-weight: bold; margin-bottom: 60px; }
         .row { display: flex; justify-content: space-between; font-size: 52px; font-weight: bold; margin-bottom: 25px; text-transform: uppercase; }
-        .closed { font-size: 64px; font-weight: bold; text-align: center; margin-top: 150px; }
+        .msg { font-size: 48px; text-align: center; margin-top: 100px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="monitor" id="main-container"></div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
@@ -36,16 +35,25 @@
             const container = document.getElementById('main-container');
 
             if (data.status === "reset_wszystkich") {
-                container.innerHTML = `<div class="closed">SESJA ZAMKNIĘTA</div>`;
+                container.innerHTML = `<div class="msg">SESJA ZAMKNIĘTA</div>`;
                 return;
             }
 
+            // Jeśli głosowanie trwa, nie pokazuj wyników cząstkowych
+            if (data.status === "otwarte") {
+                container.innerHTML = `
+                    <div class="header">${data.tytul.toUpperCase()}</div>
+                    <div class="msg">GŁOSOWANIE W TOKU...</div>
+                `;
+                return;
+            }
+
+            // Pokaż wyniki tylko gdy status to 'zamkniete' lub 'logowanie' (puste)
             let keys = Object.keys(data.wyniki || {});
             const order = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"];
             keys.sort((a, b) => order.indexOf(a) - order.indexOf(b));
 
-            let suma = 0;
-            let rowsHTML = "";
+            let suma = 0; let rowsHTML = "";
             keys.forEach(k => { suma += data.wyniki[k]; rowsHTML += `<div class="row"><span>${k}</span><span>${data.wyniki[k]}</span></div>`; });
 
             container.innerHTML = `
