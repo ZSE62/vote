@@ -6,68 +6,48 @@
     <style>
         :root { --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; }
         body { font-family: sans-serif; background: #f4f7f6; margin: 0; display: flex; height: 100vh; }
-        
-        /* Sidebar i Main ukryte, gdy sesja zamknięta */
+        #start-screen { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: #f4f7f6; z-index: 100; }
         .sidebar { width: 350px; background: white; border-right: 1px solid #ddd; padding: 20px; display: none; flex-direction: column; }
         .main { flex: 1; padding: 20px; display: none; grid-template-columns: 1fr 1fr; gap: 20px; }
-        
-        /* Styl dla ekranu startowego */
-        #start-screen { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: #f4f7f6; z-index: 100; }
-        .btn-start-big { padding: 30px 60px; font-size: 24px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
-
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow-y: auto; margin-bottom: 20px; }
         button { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        input, select { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        
-        .btn-vote { background: var(--success); color: white; height: 50px; }
+        .btn-start-big { padding: 30px 60px; font-size: 24px; background: var(--primary); color: white; border-radius: 10px; }
+        .btn-vote { background: var(--success); color: white; }
         .btn-stop { background: var(--danger); color: white; }
         .small-list { list-style: none; padding: 0; margin: 0; font-size: 13px; }
         .small-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
         .del-mini { width: auto; padding: 4px 8px; background: #ffeded; color: var(--danger); border: 1px solid var(--danger); font-size: 10px; border-radius: 3px; }
-
-        /* Styl historii */
-        .hist-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 12px; }
-        .hist-item b { display: block; color: var(--dark); margin-bottom: 3px; }
     </style>
 </head>
 <body>
-    <div id="start-screen">
-        <button class="btn-start-big" onclick="otworzSesje()">OTWÓRZ SESJĘ</button>
-    </div>
+    <div id="start-screen"><button class="btn-start-big" onclick="otworzSesje()">OTWÓRZ SESJĘ</button></div>
 
     <div class="sidebar" id="sidebar">
         <div class="card">
-            <h3>Nowe Głosowanie</h3>
-            <input type="text" id="tytul" placeholder="Temat uchwały">
-            <select id="tryb" onchange="document.getElementById('custom').style.display=this.value=='os'?'block':'none'">
+            <h3>Głosowanie</h3>
+            <input type="text" id="tytul" placeholder="Temat uchwały" style="width:100%; padding:10px; margin-bottom:10px;">
+            <select id="tryb" style="width:100%; padding:10px; margin-bottom:10px;">
                 <option value="tn">ZA / PRZECIW / WSTRZYMAŁO SIĘ</option>
-                <option value="os">LISTA WŁASNA</option>
             </select>
-            <div id="custom" style="display:none"><input type="text" id="opcje" placeholder="Opcja 1, Opcja 2..."></div>
             <button id="actionBtn" class="btn-vote" onclick="toggleVote()">START GŁOSOWANIA</button>
         </div>
-
         <div class="card" style="flex:1">
-            <h3>Historia Głosowań (Bieżąca)</h3>
+            <h3>Historia Bieżąca</h3>
             <div id="historia" class="small-list"></div>
         </div>
-
-        <button style="background:none; border: 1px solid red; color:red" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ & RAPORT</button>
+        <button style="background:none; border: 1px solid red; color:red" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ</button>
     </div>
 
     <div class="main" id="main">
         <div class="card">
-            <h3>Obecni (<span id="c">0</span>) <button onclick="toggleL()" id="lBtn" style="width:auto; float:right; padding:5px; font-size:10px">ZABLOKUJ</button></h3>
+            <h3>Obecni (<span id="c">0</span>)</h3>
             <ul id="lO" class="small-list"></ul>
         </div>
         <div class="card">
             <h3>Baza Radnych</h3>
-            <div style="display: flex; gap: 5px;">
-                <input type="text" id="nK" placeholder="Kod" style="flex: 1;">
-                <input type="text" id="nN" placeholder="Nazwisko" style="flex: 2;">
-            </div>
+            <input type="text" id="nK" placeholder="Kod">
+            <input type="text" id="nN" placeholder="Nazwisko">
             <button style="background:var(--dark); color:white" onclick="dodajK()">DODAJ</button>
-            <hr>
             <ul id="lB" class="small-list"></ul>
         </div>
     </div>
@@ -88,94 +68,55 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
-        let stat = "";
 
-        // MONITORING STATUSU I PANELU
         onSnapshot(docRef, (snap) => {
             const data = snap.data(); if(!data) return;
-            stat = data.status;
-            
-            const isClosed = stat === "reset_wszystkich";
-            document.getElementById('start-screen').style.display = isClosed ? "flex" : "none";
-            document.getElementById('sidebar').style.display = isClosed ? "none" : "flex";
-            document.getElementById('main').style.display = isClosed ? "none" : "grid";
+            const closed = data.status === "reset_wszystkich";
+            document.getElementById('start-screen').style.display = closed ? "flex" : "none";
+            document.getElementById('sidebar').style.display = closed ? "none" : "flex";
+            document.getElementById('main').style.display = closed ? "none" : "grid";
 
-            const btn = document.getElementById('actionBtn');
-            btn.innerText = stat === "otwarte" ? "ZAKOŃCZ GŁOSOWANIE" : "START GŁOSOWANIA";
-            btn.className = stat === "otwarte" ? "btn-vote btn-stop" : "btn-vote";
-
+            document.getElementById('actionBtn').innerText = data.status === "otwarte" ? "ZAKOŃCZ GŁOSOWANIE" : "START GŁOSOWANIA";
+            document.getElementById('actionBtn').className = data.status === "otwarte" ? "btn-stop" : "btn-vote";
             document.getElementById('c').innerText = data.obecni?.length || 0;
-            document.getElementById('lBtn').innerText = data.lista_lock ? "ODBLOKUJ" : "ZABLOKUJ";
             const ul = document.getElementById('lO'); ul.innerHTML = "";
-            (data.obecni || []).forEach(o => { ul.innerHTML += `<li>${o} <button class="del-mini" onclick="usunO('${o}')">WYRZUĆ</button></li>`; });
+            (data.obecni || []).forEach(o => { ul.innerHTML += `<li>${o} <button class="del-mini" onclick="usunO('${o}')">USUŃ</button></li>`; });
         });
 
-        // MONITORING HISTORII (BIEŻĄCEJ SESJI)
         onSnapshot(collection(db, "archiwum_sesji"), (s) => {
             const div = document.getElementById('historia'); div.innerHTML = "";
-            s.forEach(d => {
-                const data = d.data();
-                const res = Object.entries(data.wyniki).map(([k,v]) => `${k}:${v}`).join(', ');
-                div.innerHTML += `<div class="hist-item"><b>${data.tytul}</b> ${res}</div>`;
-            });
+            s.forEach(d => { div.innerHTML += `<li><b>${d.data().tytul}</b></li>`; });
         });
 
-        // MONITORING BAZY KODÓW
         onSnapshot(collection(db, "kody_dostepu"), (s) => {
             const ul = document.getElementById('lB'); ul.innerHTML = "";
-            s.forEach(d => { ul.innerHTML += `<li><span><b>${d.id}</b> ${d.data().nazwisko}</span> <button class="del-mini" onclick="usunK('${d.id}')">USUŃ</button></li>`; });
+            s.forEach(d => { ul.innerHTML += `<li>${d.id} - ${d.data().nazwisko}</li>`; });
         });
 
         window.otworzSesje = async () => { 
-            await updateDoc(docRef, { status: "logowanie", obecni: [], lista_lock: false, tytul: "Oczekiwanie", wyniki: {}, lista_glosow: {} }); 
+            await updateDoc(docRef, { status: "logowanie", obecni: [], wyniki: {}, lista_glosow: {}, tytul: "Oczekiwanie" }); 
         };
 
         window.toggleVote = async () => {
-            if(stat === "otwarte") {
-                const s = await getDoc(docRef);
+            const s = await getDoc(docRef);
+            if(s.data().status === "otwarte") {
                 await updateDoc(docRef, { status: "zamkniete" });
-                await setDoc(doc(collection(db, "archiwum_sesji")), { ...s.data(), czas: new Date().toLocaleString() });
+                await setDoc(doc(collection(db, "archiwum_sesji")), { ...s.data() });
             } else {
                 const t = document.getElementById('tytul').value || "Głosowanie";
-                let w = {};
-                if(document.getElementById('tryb').value === 'tn') w = {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0};
-                else document.getElementById('opcje').value.split(',').forEach(o => { if(o.trim()) w[o.trim().toUpperCase()] = 0; });
-                await updateDoc(docRef, { tytul: t, wyniki: w, lista_glosow: {}, status: "otwarte", tryb: "reset" });
+                await updateDoc(docRef, { tytul: t, status: "otwarte", wyniki: {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} });
             }
+        };
+
+        window.zakonczSesje = async () => {
+            await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], wyniki: {}, lista_glosow: {} });
+            const q = await getDocs(collection(db, "archiwum_sesji"));
+            q.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
         };
 
         window.dodajK = async () => {
-            const k = document.getElementById('nK').value.trim(); const n = document.getElementById('nN').value.trim();
-            if(k && n) { await setDoc(doc(db, "kody_dostepu", k), { nazwisko: n }); document.getElementById('nK').value=""; document.getElementById('nN').value=""; }
-        };
-
-        window.usunK = async (kodId) => {
-            const codeSnap = await getDoc(doc(db, "kody_dostepu", kodId));
-            if(codeSnap.exists()) {
-                const n = codeSnap.data().nazwisko;
-                const v = await getDoc(docRef);
-                await updateDoc(docRef, { obecni: (v.data().obecni || []).filter(o => o !== n) });
-            }
-            await deleteDoc(doc(db, "kody_dostepu", kodId));
-        };
-
-        window.usunO = async (n) => { const s = await getDoc(docRef); await updateDoc(docRef, { obecni: s.data().obecni.filter(o => o !== n) }); };
-        window.toggleL = async () => { const s = await getDoc(docRef); await updateDoc(docRef, { lista_lock: !s.data().lista_lock }); };
-
-        window.zakonczSesje = async () => {
-            if(!confirm("Zakończyć sesję i pobrać raport?")) return;
-            const q = await getDocs(collection(db, "archiwum_sesji"));
-            let r = "RAPORT SESJI\n";
-            q.forEach(d => {
-                const data = d.data();
-                r += `\nUCHWAŁA: ${data.tytul}\nWYNIKI: ${JSON.stringify(data.wyniki)}\nLISTA: ${JSON.stringify(data.lista_glosow)}\n`;
-            });
-            const blob = new Blob([r], {type:'text/plain'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Raport.txt"; a.click();
-            
-            // CZYŚCIMY WSZYSTKO
-            await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], lista_lock: false, wyniki: {}, lista_glosow: {} });
-            q.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
+            const k = document.getElementById('nK').value; const n = document.getElementById('nN').value;
+            await setDoc(doc(db, "kody_dostepu", k), { nazwisko: n });
         };
     </script>
 </body>
