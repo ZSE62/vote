@@ -6,52 +6,38 @@
     <style>
         :root { --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; }
         body { font-family: sans-serif; background: #f4f7f6; margin: 0; display: flex; height: 100vh; }
-        .sidebar { width: 350px; background: white; border-right: 1px solid #ddd; padding: 20px; display: flex; flex-direction: column; }
-        .main { flex: 1; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow-y: auto; }
         
+        /* Sidebar i Main ukryte, gdy sesja zamknięta */
+        .sidebar { width: 350px; background: white; border-right: 1px solid #ddd; padding: 20px; display: none; flex-direction: column; }
+        .main { flex: 1; padding: 20px; display: none; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        /* Styl dla ekranu startowego */
+        #start-screen { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: #f4f7f6; z-index: 100; }
+        .btn-start-big { padding: 30px 60px; font-size: 24px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
+
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow-y: auto; margin-bottom: 20px; }
         button { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         input, select { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         
         .btn-vote { background: var(--success); color: white; height: 50px; }
         .btn-stop { background: var(--danger); color: white; }
-        .status { padding: 10px; text-align: center; border-radius: 5px; margin-bottom: 10px; font-weight: bold; background: #eee; }
-        .active { background: #d4edda; color: #155724; }
+        .small-list { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+        .small-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .del-mini { width: auto; padding: 4px 8px; background: #ffeded; color: var(--danger); border: 1px solid var(--danger); font-size: 10px; border-radius: 3px; }
 
-        /* Estetyczna lista radnych */
-        .small-list { list-style: none; padding: 0; margin: 0; }
-        .small-list li { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 10px; 
-            border-bottom: 1px solid #f0f0f0; 
-            font-size: 14px;
-        }
-        .radny-info { flex-grow: 1; margin-right: 10px; }
-        .radny-info b { color: var(--primary); margin-right: 8px; }
-        
-        /* Mały przycisk usuń */
-        .del-mini { 
-            width: auto; 
-            padding: 5px 10px; 
-            margin: 0; 
-            background: #ffeded; 
-            color: var(--danger); 
-            border: 1px solid var(--danger); 
-            font-size: 11px;
-            border-radius: 4px;
-        }
-        .del-mini:hover { background: var(--danger); color: white; }
+        /* Styl historii */
+        .hist-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 12px; }
+        .hist-item b { display: block; color: var(--dark); margin-bottom: 3px; }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div id="st" class="status">SESJA ZAMKNIĘTA</div>
-        <button id="openBtn" style="background:var(--primary); color:white" onclick="otworzSesje()">OTWÓRZ SESJĘ</button>
-        
-        <div id="ctrl" style="display:none; margin-top:20px">
-            <h3>Głosowanie</h3>
+    <div id="start-screen">
+        <button class="btn-start-big" onclick="otworzSesje()">OTWÓRZ SESJĘ</button>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="card">
+            <h3>Nowe Głosowanie</h3>
             <input type="text" id="tytul" placeholder="Temat uchwały">
             <select id="tryb" onchange="document.getElementById('custom').style.display=this.value=='os'?'block':'none'">
                 <option value="tn">ZA / PRZECIW / WSTRZYMAŁO SIĘ</option>
@@ -61,10 +47,15 @@
             <button id="actionBtn" class="btn-vote" onclick="toggleVote()">START GŁOSOWANIA</button>
         </div>
 
-        <button style="margin-top:auto; background:none; border: 1px solid red; color:red" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ & RAPORT</button>
+        <div class="card" style="flex:1">
+            <h3>Historia Głosowań (Bieżąca)</h3>
+            <div id="historia" class="small-list"></div>
+        </div>
+
+        <button style="background:none; border: 1px solid red; color:red" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ & RAPORT</button>
     </div>
 
-    <div class="main">
+    <div class="main" id="main">
         <div class="card">
             <h3>Obecni (<span id="c">0</span>) <button onclick="toggleL()" id="lBtn" style="width:auto; float:right; padding:5px; font-size:10px">ZABLOKUJ</button></h3>
             <ul id="lO" class="small-list"></ul>
@@ -73,9 +64,9 @@
             <h3>Baza Radnych</h3>
             <div style="display: flex; gap: 5px;">
                 <input type="text" id="nK" placeholder="Kod" style="flex: 1;">
-                <input type="text" id="nN" placeholder="Nazwisko i Imię" style="flex: 2;">
+                <input type="text" id="nN" placeholder="Nazwisko" style="flex: 2;">
             </div>
-            <button style="background:var(--dark); color:white" onclick="dodajK()">DODAJ RADNEGO</button>
+            <button style="background:var(--dark); color:white" onclick="dodajK()">DODAJ</button>
             <hr>
             <ul id="lB" class="small-list"></ul>
         </div>
@@ -99,14 +90,16 @@
         const docRef = doc(db, "ankiet", "vote");
         let stat = "";
 
+        // MONITORING STATUSU I PANELU
         onSnapshot(docRef, (snap) => {
             const data = snap.data(); if(!data) return;
             stat = data.status;
-            document.getElementById('st').innerText = stat === "reset_wszystkich" ? "SESJA ZAMKNIĘTA" : "SESJA OTWARTA";
-            document.getElementById('st').className = stat === "reset_wszystkich" ? "status" : "status active";
-            document.getElementById('openBtn').style.display = stat === "reset_wszystkich" ? "block" : "none";
-            document.getElementById('ctrl').style.display = stat === "reset_wszystkich" ? "none" : "block";
             
+            const isClosed = stat === "reset_wszystkich";
+            document.getElementById('start-screen').style.display = isClosed ? "flex" : "none";
+            document.getElementById('sidebar').style.display = isClosed ? "none" : "flex";
+            document.getElementById('main').style.display = isClosed ? "none" : "grid";
+
             const btn = document.getElementById('actionBtn');
             btn.innerText = stat === "otwarte" ? "ZAKOŃCZ GŁOSOWANIE" : "START GŁOSOWANIA";
             btn.className = stat === "otwarte" ? "btn-vote btn-stop" : "btn-vote";
@@ -114,19 +107,28 @@
             document.getElementById('c').innerText = data.obecni?.length || 0;
             document.getElementById('lBtn').innerText = data.lista_lock ? "ODBLOKUJ" : "ZABLOKUJ";
             const ul = document.getElementById('lO'); ul.innerHTML = "";
-            (data.obecni || []).forEach(o => { 
-                ul.innerHTML += `<li>${o} <button class="del-mini" onclick="usunO('${o}')">WYRZUĆ</button></li>`; 
+            (data.obecni || []).forEach(o => { ul.innerHTML += `<li>${o} <button class="del-mini" onclick="usunO('${o}')">WYRZUĆ</button></li>`; });
+        });
+
+        // MONITORING HISTORII (BIEŻĄCEJ SESJI)
+        onSnapshot(collection(db, "archiwum_sesji"), (s) => {
+            const div = document.getElementById('historia'); div.innerHTML = "";
+            s.forEach(d => {
+                const data = d.data();
+                const res = Object.entries(data.wyniki).map(([k,v]) => `${k}:${v}`).join(', ');
+                div.innerHTML += `<div class="hist-item"><b>${data.tytul}</b> ${res}</div>`;
             });
         });
 
+        // MONITORING BAZY KODÓW
         onSnapshot(collection(db, "kody_dostepu"), (s) => {
             const ul = document.getElementById('lB'); ul.innerHTML = "";
-            s.forEach(d => { 
-                ul.innerHTML += `<li><div class="radny-info"><b>${d.id}</b> ${d.data().nazwisko}</div> <button class="del-mini" onclick="usunK('${d.id}')">USUŃ</button></li>`; 
-            });
+            s.forEach(d => { ul.innerHTML += `<li><span><b>${d.id}</b> ${d.data().nazwisko}</span> <button class="del-mini" onclick="usunK('${d.id}')">USUŃ</button></li>`; });
         });
 
-        window.otworzSesje = async () => { await updateDoc(docRef, { status: "logowanie", obecni: [], lista_lock: false, tytul: "Oczekiwanie" }); };
+        window.otworzSesje = async () => { 
+            await updateDoc(docRef, { status: "logowanie", obecni: [], lista_lock: false, tytul: "Oczekiwanie", wyniki: {}, lista_glosow: {} }); 
+        };
 
         window.toggleVote = async () => {
             if(stat === "otwarte") {
@@ -150,10 +152,9 @@
         window.usunK = async (kodId) => {
             const codeSnap = await getDoc(doc(db, "kody_dostepu", kodId));
             if(codeSnap.exists()) {
-                const nazwisko = codeSnap.data().nazwisko;
-                const voteSnap = await getDoc(docRef);
-                const nowi = (voteSnap.data().obecni || []).filter(o => o !== nazwisko);
-                await updateDoc(docRef, { obecni: nowi });
+                const n = codeSnap.data().nazwisko;
+                const v = await getDoc(docRef);
+                await updateDoc(docRef, { obecni: (v.data().obecni || []).filter(o => o !== n) });
             }
             await deleteDoc(doc(db, "kody_dostepu", kodId));
         };
@@ -162,17 +163,18 @@
         window.toggleL = async () => { const s = await getDoc(docRef); await updateDoc(docRef, { lista_lock: !s.data().lista_lock }); };
 
         window.zakonczSesje = async () => {
-            if(!confirm("Pobrać raport i zakończyć dzień?")) return;
+            if(!confirm("Zakończyć sesję i pobrać raport?")) return;
             const q = await getDocs(collection(db, "archiwum_sesji"));
             let r = "RAPORT SESJI\n";
             q.forEach(d => {
                 const data = d.data();
-                r += `\nUCHWAŁA: ${data.tytul}\nWYNIKI: ${JSON.stringify(data.wyniki)}\nLISTA GŁOSÓW:\n`;
-                Object.entries(data.lista_glosow || {}).forEach(([k,v]) => r += `- ${k}: ${v}\n`);
+                r += `\nUCHWAŁA: ${data.tytul}\nWYNIKI: ${JSON.stringify(data.wyniki)}\nLISTA: ${JSON.stringify(data.lista_glosow)}\n`;
             });
             const blob = new Blob([r], {type:'text/plain'});
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Raport.txt"; a.click();
-            await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], lista_lock: false });
+            
+            // CZYŚCIMY WSZYSTKO
+            await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], lista_lock: false, wyniki: {}, lista_glosow: {} });
             q.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
         };
     </script>
