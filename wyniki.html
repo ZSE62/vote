@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Wyniki Głosowania - @mperek</title>
     <style>
-        /* Ustawienia dla dużego ekranu/rzutnika */
         body { 
             font-family: 'Georgia', serif; 
             background: #fff; 
@@ -14,55 +13,51 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 90vh;
+            min-height: 80vh;
             margin: 0;
         }
         .container { 
             width: 100%;
-            max-width: 1200px; 
-            border: 8px double #000; 
-            padding: 60px; 
-            box-sizing: border-box;
+            max-width: 900px; 
+            border: 4px double #000; 
+            padding: 40px; 
         }
         .title { 
-            font-size: 60px; /* Bardzo duży tytuł */
+            font-size: 38px; 
             font-weight: bold; 
             text-transform: uppercase; 
-            margin-bottom: 50px; 
-            border-bottom: 5px solid #000; 
-            padding-bottom: 30px; 
-            line-height: 1.2;
+            margin-bottom: 20px; 
+            padding-bottom: 15px; 
         }
         .row { 
             display: flex; 
             justify-content: space-between; 
-            font-size: 80px; /* Gigantyczne liczby wyników */
+            font-size: 48px; 
             font-weight: bold; 
-            margin: 20px 0; 
-            border-bottom: 2px dashed #ccc; 
-            padding: 10px 0;
+            margin: 10px 0; 
+            border-bottom: 1px dashed #ccc; 
+            padding: 5px 0;
         }
         .total-row {
-            color: #555; 
-            border-bottom: 6px solid #000; 
-            font-size: 65px; /* Rozmiar dla sumy głosujących */
-            margin-bottom: 40px;
+            color: #444; 
+            border-top: 3px solid #000;
+            border-bottom: 3px solid #000; 
+            font-size: 40px; 
+            margin-bottom: 30px;
+            padding: 10px 0;
         }
         .msg { 
-            font-size: 70px; 
-            margin-top: 50px; 
+            font-size: 44px; 
+            margin-top: 60px; 
             font-style: italic; 
-            color: #444; 
-            font-weight: bold;
+            color: #333; 
         }
         .footer { 
-            margin-top: 60px; 
-            font-size: 24px; 
-            color: #888; 
-            border-top: 2px solid #eee; 
-            padding-top: 20px; 
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            margin-top: 40px; 
+            font-size: 18px; 
+            color: #999; 
+            border-top: 1px solid #eee; 
+            padding-top: 15px; 
         }
     </style>
 </head>
@@ -89,7 +84,7 @@
             const view = document.getElementById('view');
 
             if (data.status === "reset_wszystkich") {
-                view.innerHTML = `<div class="msg">SYSTEM @MPEREK<br><span style="font-size: 40px;">OCZEKIWANIE NA SESJĘ</span></div>`;
+                view.innerHTML = `<div class="msg">OCZEKIWANIE NA SESJĘ</div>`;
                 return;
             }
 
@@ -112,12 +107,16 @@
             let rows = "";
             keys.forEach(k => { 
                 total += data.wyniki[k]; 
-                rows += `<div class="row"><span>${k}</span><span>${data.wyniki[k]}</span></div>`; 
+                // Mapowanie nazw na małe litery zgodnie z prośbą
+                let label = k.toLowerCase();
+                if(label === "wstrzymało się") label = "wstrzymujących";
+                
+                rows += `<div class="row"><span>${label}</span><span>${data.wyniki[k]}</span></div>`; 
             });
 
             view.innerHTML = `
                 <div class="title">${data.tytul}</div>
-                <div class="row total-row"><span>GŁOSUJĄCYCH RAZEM</span><span>${total}</span></div>
+                <div class="row total-row"><span>głosujących</span><span>${total}</span></div>
                 ${rows}
                 <div class="footer">System @mperek | RSU ZSE Gdańsk</div>
             `;
