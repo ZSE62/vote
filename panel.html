@@ -32,21 +32,22 @@
 
     <div class="sidebar" id="sidebar">
         <div class="card" style="margin-bottom: 20px;">
-            <h3>Nowe Głosowanie</h3>
-            <label style="font-size: 0.8rem; color: #666;">Temat uchwały:</label>
-            <input type="text" id="tytul" class="input-short" placeholder="Np. Uchwała nr 1">
-            
-            <select id="tryb" onchange="document.getElementById('custom-options').style.display = (this.value === 'os' ? 'block' : 'none')">
-                <option value="tn">ZA / PRZECIW / WSTRZYMAŁO SIĘ</option>
-                <option value="os">LISTA WŁASNA (NAZWISKA)</option>
-            </select>
+    <h3>Nowe Głosowanie</h3>
+    <label style="font-size: 0.8rem; color: #666;">Temat uchwały:</label>
+    <input type="text" id="tytul" class="input-short" placeholder="Np. Uchwała nr 1">
+    
+    <select id="tryb" class="input-short" onchange="document.getElementById('custom-options').style.display = (this.value === 'os' ? 'block' : 'none')">
+        <option value="tn">ZA / PRZECIW / WSTRZYMAŁO SIĘ</option>
+        <option value="os">LISTA WŁASNA (NAZWISKA)</option>
+    </select>
 
-            <div id="custom-options" style="display: none;">
-                <input type="text" id="opcje" placeholder="Opcja 1, Opcja 2, Opcja 3..." style="width: 100%;">
-            </div>
+    <div id="custom-options" style="display: none;">
+        <label style="font-size: 0.8rem; color: #666;">Nazwiska (po przecinku):</label>
+        <input type="text" id="opcje" class="input-short" placeholder="Opcja 1, Opcja 2...">
+    </div>
 
-            <button id="actionBtn" class="btn-vote" onclick="toggleVote()">START GŁOSOWANIA</button>
-        </div>
+    <button id="actionBtn" class="btn-vote" onclick="toggleVote()">START GŁOSOWANIA</button>
+</div>
         
         <div class="card" style="flex: 1;">
             <h3>Historia Sesji</h3>
@@ -157,3 +158,4 @@
     </script>
 </body>
 </html>
+
