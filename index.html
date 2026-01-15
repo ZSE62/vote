@@ -6,6 +6,9 @@
     <title>Terminal Radnego</title>
     <style>
         body { background: #fdfdfd; color: #333; font-family: sans-serif; text-align: center; padding: 20px; }
+        .login-box { max-width: 350px; margin: 80px auto; padding: 30px; background: white; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 1rem; }
+        .btn-login { background: #2980b9; color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 5px; }
         .btn { display: block; width: 100%; max-width: 400px; padding: 25px; margin: 15px auto; font-size: 1.4rem; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; }
         .btn-za { background: #27ae60; }
         .btn-przeciw { background: #c0392b; }
@@ -15,14 +18,21 @@
     </style>
 </head>
 <body>
-    <h2 id="title">System Głosowania</h2>
-    <div id="status-info"></div>
-    <div id="btns"></div>
-    <p id="msg"></p>
+    <div id="loginArea" class="login-box">
+        <h3>Logowanie do Sesji</h3>
+        <input type="text" id="accessCode" placeholder="Wpisz swój kod dostępu">
+        <button class="btn-login" onclick="zaloguj()">WEJDŹ</button>
+    </div>
+
+    <div id="voteArea" style="display:none;">
+        <h2 id="title">System Głosowania</h2>
+        <div id="btns"></div>
+        <p id="msg"></p>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM",
@@ -37,86 +47,88 @@
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
-        let mojeNazwisko = localStorage.getItem('radny_nazwa');
+        let userFullInfo = null;
+        let votedInCurrentRound = false;
 
-        onSnapshot(docRef, (snap) => {
-            const data = snap.data();
-            if(!data) return;
+        window.zaloguj = async () => {
+            const code = document.getElementById('accessCode').value.trim();
+            if(!code) return;
 
-            const listaObecnosci = data.obecni || [];
-            const czyListaZamknieta = data.lista_lock === true;
-
-            // Logowanie/Rejestracja
-            if (!mojeNazwisko) {
-                if (czyListaZamknieta) {
-                    document.body.innerHTML = "<h1>Lista obecności zamknięta. Skontaktuj się z Adminem.</h1>";
-                    return;
-                }
-                mojeNazwisko = prompt("Podaj Imię i Nazwisko:");
-                if (mojeNazwisko) {
-                    localStorage.setItem('radny_nazwa', mojeNazwisko);
-                    updateDoc(docRef, { obecni: arrayUnion(mojeNazwisko) });
-                } else { location.reload(); }
-            }
-
-            // Sprawdzenie czy radny nie został usunięty przez admina
-            if (!listaObecnosci.includes(mojeNazwisko)) {
-                if (czyListaZamknieta) {
-                    document.getElementById('msg').innerText = "Zostałeś usunięty z listy obecnych.";
-                    document.getElementById('btns').innerHTML = "";
-                    return;
-                } else {
-                    // Automatyczne dopisanie jeśli lista otwarta
-                    updateDoc(docRef, { obecni: arrayUnion(mojeNazwisko) });
-                }
-            }
-
-            document.getElementById('title').innerText = data.tytul;
-            const div = document.getElementById('btns');
-            div.innerHTML = "";
-
-            if(data.status === "zamkniete") {
-                document.getElementById('msg').innerText = "Głosowanie zakończone. Czekaj...";
+            // Sprawdzanie kodu w bazie
+            const codeSnap = await getDoc(doc(db, "kody_dostepu", code));
+            
+            if(!codeSnap.exists()) {
+                alert("Błędny kod dostępu!");
                 return;
             }
 
-            if(data.tryb === "reset") {
-                localStorage.removeItem('voted');
-                document.getElementById('msg').innerText = "Zalogowany jako: " + mojeNazwisko;
-            }
+            const userData = codeSnap.data();
+            const nazwa = `${userData.imie} ${userData.nazwisko} (${userData.opis})`;
 
-            const order = ["ZA", "PRZECIW", "WSTRZYM"];
-            const keys = Object.keys(data.wyniki || {}).sort((a,b) => {
-                let iA = order.findIndex(l => a.toUpperCase().includes(l));
-                let iB = order.findIndex(l => b.toUpperCase().includes(l));
-                return (iA===-1?99:iA) - (iB===-1?99:iB);
-            });
+            const voteSnap = await getDoc(docRef);
+            if(voteSnap.data().lista_lock) return alert("Lista obecności zamknięta!");
+            if(voteSnap.data().obecni?.includes(nazwa)) return alert("Jesteś już zalogowany!");
 
-            keys.forEach(key => {
-                const b = document.createElement('button');
-                b.innerText = key;
-                let c = "btn-default";
-                if(key.toUpperCase().includes("ZA")) c = "btn-za";
-                else if(key.toUpperCase().includes("PRZECIW")) c = "btn-przeciw";
-                else if(key.toUpperCase().includes("WSTRZYM")) c = "btn-wstrzymuje";
-                b.className = "btn " + c;
+            userFullInfo = nazwa;
+            await updateDoc(docRef, { obecni: arrayUnion(nazwa) });
+            
+            document.getElementById('loginArea').style.display = "none";
+            document.getElementById('voteArea').style.display = "block";
+            startApp();
+        };
 
-                if(localStorage.getItem('voted')) {
-                    b.disabled = true;
-                    document.getElementById('msg').innerText = "Głos oddany pomyślnie.";
+        function startApp() {
+            onSnapshot(docRef, (snap) => {
+                const data = snap.data();
+                if(!data || !data.obecni?.includes(userFullInfo) || data.status === "reset_wszystkich") {
+                    location.reload();
+                    return;
                 }
 
-                b.onclick = async () => {
-                    const safeName = mojeNazwisko.replace(/[.#$/[\]]/g, ""); 
-                    await updateDoc(docRef, { 
-                        [`wyniki.${key}`]: increment(1),
-                        [`lista_glosow.${safeName}`]: key 
-                    });
-                    localStorage.setItem('voted', 'true');
-                };
-                div.appendChild(b);
+                document.getElementById('title').innerText = data.tytul;
+                const div = document.getElementById('btns');
+                div.innerHTML = "";
+
+                if(data.status === "zamkniete") {
+                    document.getElementById('msg').innerText = "Głosowanie zakończone.";
+                    return;
+                }
+
+                if(data.tryb === "reset") {
+                    votedInCurrentRound = false;
+                    document.getElementById('msg').innerText = "Zalogowano: " + userFullInfo;
+                }
+
+                const order = ["ZA", "PRZECIW", "WSTRZYM"];
+                const keys = Object.keys(data.wyniki || {}).sort((a,b) => {
+                    let iA = order.findIndex(l => a.toUpperCase().includes(l));
+                    let iB = order.findIndex(l => b.toUpperCase().includes(l));
+                    return (iA===-1?99:iA) - (iB===-1?99:iB);
+                });
+
+                keys.forEach(key => {
+                    const b = document.createElement('button');
+                    b.innerText = key;
+                    let c = key.toUpperCase().includes("ZA") ? "btn-za" : (key.toUpperCase().includes("PRZECIW") ? "btn-przeciw" : (key.toUpperCase().includes("WSTRZYM") ? "btn-wstrzymuje" : "btn-default"));
+                    b.className = "btn " + c;
+
+                    if(votedInCurrentRound) {
+                        b.disabled = true;
+                        document.getElementById('msg').innerText = "Głos oddany.";
+                    }
+
+                    b.onclick = async () => {
+                        const safeName = userFullInfo.replace(/[.#$/[\]]/g, ""); 
+                        await updateDoc(docRef, { 
+                            [`wyniki.${key}`]: increment(1),
+                            [`lista_glosow.${safeName}`]: key 
+                        });
+                        votedInCurrentRound = true;
+                    };
+                    div.appendChild(b);
+                });
             });
-        });
+        }
     </script>
 </body>
 </html>
