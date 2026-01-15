@@ -2,51 +2,24 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Wyniki Głosowania</title>
+    <title>Tablica Wyników</title>
     <style>
-        body { background: white; color: #000; font-family: "Times New Roman", Times, serif; padding: 40px; }
-        .board { max-width: 1000px; margin: auto; }
-        .header {
-            font-size: 2.8rem;
-            text-align: center;
-            font-weight: bold;
-            text-transform: uppercase;
-            padding-bottom: 20px;
-            margin-bottom: 40px;
-            border-bottom: 5px solid #000; /* Krecha pod tytułem */
-        }
-        .row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 25px 0;
-            font-size: 2.5rem;
-            font-weight: bold;
-        }
-        .label { flex: 1; text-transform: uppercase; }
-        .bar-container { flex: 2; height: 35px; background: #eee; margin: 0 30px; border: 1px solid #000; position: relative; }
-        .bar { height: 100%; transition: width 1s ease-out; }
-        .val { width: 100px; text-align: right; }
-        
-        /* Kolory Sejmowe */
-        .bg-za { background: #27ae60; }
-        .bg-przeciw { background: #c0392b; }
-        .bg-wstrzymuje { background: #f1c40f; }
-        .bg-default { background: #34495e; }
-
-        #total { font-size: 1.8rem; border-top: 2px solid #000; margin-top: 50px; padding-top: 20px; text-align: right; }
-        #waiting { font-size: 2rem; text-align: center; margin-top: 100px; color: #777; font-style: italic; }
+        body { font-family: sans-serif; background: #2c3e50; color: white; text-align: center; padding: 50px; }
+        h1 { font-size: 3.5rem; margin-bottom: 60px; }
+        .results-grid { display: flex; justify-content: center; gap: 60px; }
+        .res-box { padding: 20px; min-width: 200px; border-radius: 10px; background: rgba(255,255,255,0.05); }
+        .label { font-size: 1.8rem; margin-bottom: 20px; font-weight: bold; }
+        .value { font-size: 5rem; font-weight: bold; }
+        .za { color: #2ecc71; }
+        .przeciw { color: #e74c3c; }
+        .wstrzymuje { color: #f1c40f; }
+        .footer { margin-top: 100px; font-size: 1.5rem; opacity: 0.6; }
     </style>
 </head>
 <body>
-    <div class="board">
-        <div id="content" style="display:none;">
-            <div class="header" id="title">GŁOSOWANIE</div>
-            <div id="results"></div>
-            <div id="total"></div>
-        </div>
-        <div id="waiting">Oczekiwanie na zakończenie głosowania...</div>
-    </div>
+    <h1 id="title">Oczekiwanie na głosowanie...</h1>
+    <div class="results-grid" id="grid"></div>
+    <div class="footer" id="stats">Obecnych: 0 | Głosowało: 0</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -63,43 +36,35 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const docRef = doc(db, "ankiet", "vote");
 
-        onSnapshot(doc(db, "ankiet", "vote"), (snap) => {
-            const data = snap.data();
-            if(!data) return;
+        onSnapshot(docRef, (snap) => {
+            const data = snap.data(); if(!data) return;
+            document.getElementById('title').innerText = data.tytul;
+            
+            let keys = Object.keys(data.wyniki || {});
+            if (keys.includes("ZA")) keys = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].filter(k => keys.includes(k));
+            else keys.sort();
 
-            if(data.status === "zamkniete") {
-                document.getElementById('waiting').style.display = "none";
-                document.getElementById('content').style.display = "block";
-                document.getElementById('title').innerText = data.tytul.toUpperCase();
+            const grid = document.getElementById('grid');
+            grid.innerHTML = "";
+            let total = 0;
 
-                const resultsDiv = document.getElementById('results');
-                resultsDiv.innerHTML = "";
-                
-                const entries = Object.entries(data.wyniki || {});
-                const total = entries.reduce((a, b) => a + b[1], 0);
-                document.getElementById('total').innerText = "SUMA GŁOSÓW: " + total;
+            keys.forEach(key => {
+                const val = data.wyniki[key];
+                total += val;
+                let c = "za";
+                if(key === "PRZECIW") c = "przeciw";
+                if(key === "WSTRZYMAŁO SIĘ") c = "wstrzymuje";
 
-                entries.forEach(([key, val]) => {
-                    const proc = total > 0 ? (val / total * 100) : 0;
-                    let color = "bg-default";
-                    const u = key.toUpperCase();
-                    if(u.includes("ZA")) color = "bg-za";
-                    else if(u.includes("PRZECIW")) color = "bg-przeciw";
-                    else if(u.includes("WSTRZYM")) color = "bg-wstrzymuje";
-
-                    resultsDiv.innerHTML += `
-                        <div class="row">
-                            <div class="label">${key}</div>
-                            <div class="bar-container"><div class="bar ${color}" style="width: ${proc}%"></div></div>
-                            <div class="val">${val}</div>
-                        </div>
-                    `;
-                });
-            } else {
-                document.getElementById('content').style.display = "none";
-                document.getElementById('waiting').style.display = "block";
-            }
+                grid.innerHTML += `
+                    <div class="res-box">
+                        <div class="label">${key}</div>
+                        <div class="value ${c}">${val}</div>
+                    </div>
+                `;
+            });
+            document.getElementById('stats').innerText = `Obecnych: ${data.obecni?.length || 0} | Głosowało: ${total}`;
         });
     </script>
 </body>
