@@ -3,30 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal Radnego</title>
+    <title>Terminal Radnego @mperek</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #fdfdfd; padding: 20px; margin: 0; }
-        .login-box { max-width: 350px; margin: 80px auto; padding: 30px; background: white; border: 1px solid #ddd; border-radius: 12px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
-        .btn-login { background: #2980b9; color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 5px; }
-        .btn { display: block; width: 100%; max-width: 400px; padding: 25px; margin: 15px auto; font-size: 1.4rem; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #f4f7f6; padding: 20px; margin: 0; color: #333; }
+        .login-box { max-width: 350px; margin: 60px auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid #e0e0e0; }
+        h1 { color: #000; font-size: 32px; margin: 0 0 10px 0; letter-spacing: -1px; }
+        .sub-title { font-size: 11px; font-weight: bold; margin-bottom: 25px; text-transform: uppercase; line-height: 1.4; color: #555; border-top: 2px solid #2980b9; padding-top: 10px; }
+        input { width: 100%; padding: 14px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: border 0.3s; }
+        input:focus { border-color: #2980b9; outline: none; }
+        .btn-login { background: #2980b9; color: white; border: none; width: 100%; padding: 14px; cursor: pointer; font-weight: bold; border-radius: 8px; font-size: 16px; margin-top: 10px; }
+        
+        .vote-container { display: none; max-width: 450px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .user-info { text-align: right; font-size: 13px; color: #777; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        #userNameDisplay { font-weight: bold; color: #2980b9; }
+        
+        h2 { font-size: 22px; margin-bottom: 20px; line-height: 1.3; text-align: center; }
+        .btn { display: block; width: 100%; padding: 22px; margin: 12px 0; font-size: 1.3rem; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; transition: transform 0.1s, opacity 0.3s; }
+        .btn:active { transform: scale(0.98); }
         .btn-za { background: #27ae60; }
         .btn-przeciw { background: #c0392b; }
         .btn-wstrzymuje { background: #f1c40f; color: #000; }
-        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        #msg { margin-top: 20px; font-weight: bold; font-size: 18px; color: #333; }
+        .btn:disabled { opacity: 0.2; cursor: not-allowed; }
+        #msg { margin-top: 20px; font-weight: bold; font-size: 16px; color: #2c3e50; text-align: center; }
     </style>
 </head>
 <body>
     <div id="loginArea" class="login-box">
-        <h2>@mperek.</h2>
-        <h6><i>system, który wspiera demokrację w ZSE!</i></h6>
-        <input type="text" id="accessCode" placeholder="Kod dostępu">
+        <h1>@mperek.</h1>
+        <div class="sub-title">Rada Samorządu Uczniowskiego<br>Zespołu Szkół Energetycznych w Gdańsku</div>
+        <input type="text" id="accessCode" placeholder="Wprowadź kod dostępu">
         <button class="btn-login" onclick="zaloguj()">ZALOGUJ SIĘ</button>
     </div>
 
-    <div id="voteArea" style="display:none;">
-        <h2 id="title">Oczekiwanie...</h2>
+    <div id="voteArea" class="vote-container">
+        <div class="user-info">
+            Zalogowany jako: <span id="userNameDisplay"></span>
+        </div>
+        <h2 id="title">Oczekiwanie na rozpoczęcie...</h2>
         <div id="btns"></div>
         <p id="msg"></p>
     </div>
@@ -58,11 +71,12 @@
 
         window.zaloguj = async () => {
             const code = document.getElementById('accessCode').value.trim();
+            if(!code) return;
             const cSnap = await getDoc(doc(db, "kody_dostepu", code));
-            if(!cSnap.exists()) return alert("Błędny kod!");
+            if(!cSnap.exists()) return alert("Błędny kod dostępu!");
 
             const vSnap = await getDoc(docRef);
-            if(vSnap.data().lista_lock) return alert("Lista obecności zablokowana.");
+            if(vSnap.data().lista_lock) return alert("Lista obecności jest już zamknięta.");
 
             userFullInfo = cSnap.data().nazwisko;
             localStorage.setItem("zalogowanyRadny", userFullInfo);
@@ -77,6 +91,8 @@
         };
 
         function startApp() {
+            document.getElementById('userNameDisplay').innerText = userFullInfo;
+
             onSnapshot(docRef, (snap) => {
                 const data = snap.data();
                 if(!data || data.status === "reset_wszystkich" || !data.obecni?.includes(userFullInfo)) {
@@ -90,8 +106,8 @@
                 const msgEl = document.getElementById('msg');
 
                 if(data.status !== "otwarte") {
-                    titleEl.innerText = "SESJA W TOKU";
-                    msgEl.innerText = "Oczekiwanie na następne głosowanie...";
+                    titleEl.innerText = "SESJA RADY";
+                    msgEl.innerText = "Proszę czekać na otwarcie głosowania...";
                     div.innerHTML = "";
                     return;
                 }
@@ -117,11 +133,12 @@
                     div.appendChild(b);
                 });
 
-                msgEl.innerText = juzGlosowal ? "Głos zapisany ("+data.lista_glosow[safeName]+")" : "Proszę oddać głos:";
+                msgEl.innerText = juzGlosowal ? "Twój głos został zapisany: "+data.lista_glosow[safeName] : "Proszę oddać głos:";
             });
         }
 
         async function oddajGlos(opcja, safeName) {
+            if(!confirm("Czy na pewno chcesz oddać głos: " + opcja + "?")) return;
             const fresh = await getDoc(docRef);
             if (fresh.data().lista_glosow?.[safeName]) return;
             await updateDoc(docRef, { [`wyniki.${opcja}`]: increment(1), [`lista_glosow.${safeName}`]: opcja });
@@ -129,8 +146,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
