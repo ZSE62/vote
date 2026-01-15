@@ -2,33 +2,64 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Wyniki Głosowania</title>
+    <title>Tablica Wyników</title>
     <style>
         body { 
             font-family: "Times New Roman", Times, serif; 
-            text-align: center; 
-            padding-top: 50px; 
+            background-color: white; 
+            color: black; 
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
         }
-        h1 { 
-            font-size: 40px; 
+        .monitor {
+            width: 800px;
+            text-align: left;
         }
-        .wynik-blok { 
-            font-size: 30px; 
-            margin: 10px; 
+        .header {
+            font-size: 32px;
+            text-align: center;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 50px;
         }
-        #stats { 
-            margin-top: 50px; 
-            font-size: 20px; 
+        .row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 48px; /* Duża, czytelna czcionka */
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+        .spacer {
+            height: 40px; /* Odstęp między "Głosowało" a wynikami */
+        }
+        #stats-obecni {
+            margin-top: 50px;
+            font-size: 24px;
+            text-align: center;
+            border-top: 2px solid black;
+            padding-top: 10px;
         }
     </style>
 </head>
 <body>
-    <h1 id="tytul">Oczekiwanie na głosowanie...</h1>
-    
-    <div id="wyniki-lista">
+    <div class="monitor">
+        <div id="tytul" class="header">GŁOSOWANIE</div>
+        
+        <div class="row">
+            <span>GŁOSOWAŁO</span>
+            <span id="suma">0</span>
         </div>
 
-    <div id="stats">Obecnych: 0 | Głosowało: 0</div>
+        <div class="spacer"></div>
+
+        <div id="wyniki-lista">
+            </div>
+
+        <div id="stats-obecni">OBECNYCH: 0</div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -51,11 +82,11 @@
             const data = snap.data();
             if(!data) return;
 
-            document.getElementById('tytul').innerText = data.tytul;
+            document.getElementById('tytul').innerText = data.tytul.toUpperCase();
             const lista = document.getElementById('wyniki-lista');
             lista.innerHTML = "";
 
-            // LOGIKA KOLEJNOŚCI
+            // KOLEJNOŚĆ SEJMOWA
             let keys = Object.keys(data.wyniki || {});
             if (keys.includes("ZA")) {
                 keys = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].filter(k => keys.includes(k));
@@ -68,15 +99,16 @@
                 const wartosc = data.wyniki[key];
                 sumaGlosow += wartosc;
 
-                // WYGLĄD JAK WCZEŚNIEJ (Prosty tekst)
                 lista.innerHTML += `
-                    <div class="wynik-blok">
-                        ${key}: ${wartosc}
+                    <div class="row">
+                        <span>${key}</span>
+                        <span>${wartosc}</span>
                     </div>
                 `;
             });
 
-            document.getElementById('stats').innerText = `Obecnych: ${data.obecni?.length || 0} | Głosowało: ${sumaGlosow}`;
+            document.getElementById('suma').innerText = sumaGlosow;
+            document.getElementById('stats-obecni').innerText = `OBECNYCH: ${data.obecni?.length || 0}`;
         });
     </script>
 </body>
