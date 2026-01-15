@@ -39,19 +39,17 @@
                 return;
             }
 
-            // Jeśli głosowanie trwa, nie pokazuj wyników cząstkowych
             if (data.status === "otwarte") {
-                container.innerHTML = `
-                    <div class="header">${data.tytul.toUpperCase()}</div>
-                    <div class="msg">GŁOSOWANIE W TOKU...</div>
-                `;
+                container.innerHTML = `<div class="header">${data.tytul.toUpperCase()}</div><div class="msg">GŁOSOWANIE W TOKU...</div>`;
                 return;
             }
 
-            // Pokaż wyniki tylko gdy status to 'zamkniete' lub 'logowanie' (puste)
             let keys = Object.keys(data.wyniki || {});
             const order = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"];
-            keys.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+            keys.sort((a,b) => {
+                let idxA = order.indexOf(a); let idxB = order.indexOf(b);
+                return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+            });
 
             let suma = 0; let rowsHTML = "";
             keys.forEach(k => { suma += data.wyniki[k]; rowsHTML += `<div class="row"><span>${k}</span><span>${data.wyniki[k]}</span></div>`; });
