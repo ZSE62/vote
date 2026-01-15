@@ -9,57 +9,45 @@
             background-color: white; 
             color: black; 
             margin: 0;
-            padding: 40px;
+            padding: 60px;
             display: flex;
             justify-content: center;
         }
         .monitor {
-            width: 800px;
+            width: 850px;
             text-align: left;
         }
         .header {
-            font-size: 32px;
+            font-size: 36px;
             text-align: center;
             text-transform: uppercase;
             font-weight: bold;
-            margin-bottom: 50px;
+            margin-bottom: 60px;
         }
         .row {
             display: flex;
             justify-content: space-between;
-            font-size: 48px; /* Duża, czytelna czcionka */
+            font-size: 52px; 
             font-weight: bold;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             text-transform: uppercase;
         }
         .spacer {
-            height: 40px; /* Odstęp między "Głosowało" a wynikami */
+            height: 50px; 
         }
-        #stats-obecni {
-            margin-top: 50px;
-            font-size: 24px;
+        /* Styl dla komunikatu o zamkniętej sesji */
+        .closed-session {
+            font-size: 64px;
+            font-weight: bold;
             text-align: center;
-            border-top: 2px solid black;
-            padding-top: 10px;
+            margin-top: 150px;
+            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
-    <div class="monitor">
-        <div id="tytul" class="header">GŁOSOWANIE</div>
-        
-        <div class="row">
-            <span>GŁOSOWAŁO</span>
-            <span id="suma">0</span>
+    <div class="monitor" id="main-container">
         </div>
-
-        <div class="spacer"></div>
-
-        <div id="wyniki-lista">
-            </div>
-
-        <div id="stats-obecni">OBECNYCH: 0</div>
-    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -82,11 +70,15 @@
             const data = snap.data();
             if(!data) return;
 
-            document.getElementById('tytul').innerText = data.tytul.toUpperCase();
-            const lista = document.getElementById('wyniki-lista');
-            lista.innerHTML = "";
+            const container = document.getElementById('main-container');
 
-            // KOLEJNOŚĆ SEJMOWA
+            // SPRAWDZENIE STATUSU SESJI
+            if (data.status === "reset_wszystkich") {
+                container.innerHTML = `<div class="closed-session">SESJA ZAMKNIĘTA</div>`;
+                return;
+            }
+
+            // JEŚLI SESJA OTWARTA - WYŚWIETL WYNIKI
             let keys = Object.keys(data.wyniki || {});
             if (keys.includes("ZA")) {
                 keys = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].filter(k => keys.includes(k));
@@ -95,11 +87,11 @@
             }
 
             let sumaGlosow = 0;
+            let wynikiHTML = "";
             keys.forEach(key => {
                 const wartosc = data.wyniki[key];
                 sumaGlosow += wartosc;
-
-                lista.innerHTML += `
+                wynikiHTML += `
                     <div class="row">
                         <span>${key}</span>
                         <span>${wartosc}</span>
@@ -107,8 +99,15 @@
                 `;
             });
 
-            document.getElementById('suma').innerText = sumaGlosow;
-            document.getElementById('stats-obecni').innerText = `OBECNYCH: ${data.obecni?.length || 0}`;
+            container.innerHTML = `
+                <div class="header">${data.tytul.toUpperCase()}</div>
+                <div class="row">
+                    <span>GŁOSOWAŁO</span>
+                    <span>${sumaGlosow}</span>
+                </div>
+                <div class="spacer"></div>
+                <div id="wyniki-lista">${wynikiHTML}</div>
+            `;
         });
     </script>
 </body>
