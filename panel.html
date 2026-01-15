@@ -2,68 +2,64 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Administratora</title>
+    <title>Panel Admin @mperek</title>
     <style>
-        :root { --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; }
+        :root { --primary: #2980b9; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; }
         body { font-family: sans-serif; background: #f4f7f6; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        #start-screen { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: #f4f7f6; z-index: 100; }
-        .btn-start-big { padding: 30px 60px; font-size: 24px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
-        .sidebar { width: 320px; background: white; border-right: 1px solid #ddd; padding: 20px; display: none; flex-direction: column; }
+        #start-screen { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: #f4f7f6; z-index: 100; flex-direction: column; }
+        .sidebar { width: 350px; background: white; border-right: 1px solid #ddd; padding: 20px; display: none; flex-direction: column; }
         .main { flex: 1; padding: 20px; display: none; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
         .scroll-area { flex: 1; overflow-y: auto; margin-top: 10px; }
-        h3 { margin-top: 0; color: var(--dark); font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        input, select { padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
-        .input-short { width: 100%; max-width: 250px; }
-        button { padding: 10px; margin: 5px 0; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-vote { background: var(--success); color: white; }
-        .btn-stop { background: var(--danger); color: white; }
-        .btn-add { background: var(--dark); color: white; }
-        .small-list { list-style: none; padding: 0; margin: 0; }
-        .small-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #f9f9f9; font-size: 13px; }
-        .status-voted { color: var(--success); font-weight: bold; margin-left: 10px; }
-        .radny-name { font-weight: 500; color: #333; flex: 1; }
-        .radny-code { color: #888; font-family: monospace; background: #eee; padding: 2px 5px; border-radius: 3px; margin-right: 10px; }
-        .del-mini { width: auto; padding: 4px 8px; margin-left: 10px; background: #fff0f0; color: var(--danger); border: 1px solid #ffcccc; font-size: 10px; }
-        .hist-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 12px; line-height: 1.4; }
+        h3 { margin: 0 0 10px 0; color: var(--dark); border-bottom: 2px solid #eee; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        input, select { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; width: 100%; box-sizing: border-box; }
+        button { padding: 12px; margin: 5px 0; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-vote { background: var(--success); color: white; width: 100%; }
+        .btn-stop { background: var(--danger); color: white; width: 100%; }
+        .small-list { list-style: none; padding: 0; }
+        .small-list li { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        .status-v { color: var(--success); font-weight: bold; }
+        .hist-item { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+        .del-btn { background: #fee; color: var(--danger); padding: 4px 8px; font-size: 10px; border: 1px solid #fcc; }
     </style>
 </head>
 <body>
-    <div id="start-screen"><button class="btn-start-big" onclick="otworzSesje()">OTWÓRZ SESJĘ</button></div>
+    <div id="start-screen">
+        <h1 style="font-size: 48px; margin-bottom: 20px;">@mperek.</h1>
+        <button style="padding: 20px 50px; font-size: 20px;" class="btn-vote" onclick="otworzSesje()">OTWÓRZ NOWĄ SESJĘ</button>
+    </div>
 
     <div class="sidebar" id="sidebar">
         <div class="card" style="margin-bottom: 20px;">
-            <h3>Nowe Głosowanie</h3>
-            <label style="font-size: 0.8rem; color: #666;">Temat uchwały:</label>
-            <input type="text" id="tytul" class="input-short" placeholder="Np. Uchwała nr 1">
-            <select id="tryb" class="input-short" onchange="document.getElementById('custom-options').style.display = (this.value === 'os' ? 'block' : 'none')">
+            <h3>Głosowanie</h3>
+            <input type="text" id="tytul" placeholder="Temat uchwały / punkt obrad">
+            <select id="tryb" onchange="document.getElementById('custom').style.display = (this.value === 'os' ? 'block' : 'none')">
                 <option value="tn">ZA / PRZECIW / WSTRZYMAŁO SIĘ</option>
-                <option value="os">LISTA WŁASNA (NAZWISKA)</option>
+                <option value="os">LISTA WŁASNA</option>
             </select>
-            <div id="custom-options" style="display: none;">
-                <input type="text" id="opcje" class="input-short" placeholder="Opcja 1, Opcja 2...">
-            </div>
+            <div id="custom" style="display: none;"><input type="text" id="opcje" placeholder="Opcja 1, Opcja 2..."></div>
             <button id="actionBtn" class="btn-vote" onclick="toggleVote()">START GŁOSOWANIA</button>
         </div>
         <div class="card" style="flex: 1;">
             <h3>Historia Głosowań</h3>
             <div id="historia" class="scroll-area"></div>
         </div>
-        <button style="background:none; border: 1px solid var(--danger); color: var(--danger); margin-top: 10px;" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ</button>
+        <button class="btn-stop" onclick="zakonczSesje()">ZAMKNIJ SESJĘ & RAPORT</button>
     </div>
 
     <div class="main" id="main">
         <div class="card">
-            <h3>Obecni: <span id="c">0</span> <button onclick="toggleL()" id="lBtn" style="width:auto; float:right; padding:5px; font-size:10px; background:#eee;">ZABLOKUJ LISTĘ</button></h3>
-            <div class="scroll-area"><ul id="lO" class="small-list"></ul></div>
+            <h3>Obecni (<span id="count">0</span>) <button id="lBtn" onclick="toggleL()" style="font-size: 10px; padding: 5px;">BLOKUJ LISTĘ</button></h3>
+            <div class="scroll-area"><ul id="listO" class="small-list"></ul></div>
         </div>
         <div class="card">
             <h3>Baza Radnych</h3>
-            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 5px;">
-                <input type="text" id="nN" placeholder="NAZWISKO IMIĘ KLASA"><input type="text" id="nK" placeholder="KOD">
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="nK" placeholder="Kod" style="flex: 1;">
+                <input type="text" id="nN" placeholder="Imię i Nazwisko" style="flex: 2;">
             </div>
-            <button class="btn-add" onclick="dodajK()">DODAJ RADNEGO</button>
-            <div class="scroll-area" style="border-top: 1px solid #eee;"><ul id="lB" class="small-list"></ul></div>
+            <button style="background: var(--dark); color: white;" onclick="dodajK()">DODAJ DO BAZY</button>
+            <div class="scroll-area"><ul id="listB" class="small-list"></ul></div>
         </div>
     </div>
 
@@ -86,43 +82,40 @@
 
         onSnapshot(docRef, (snap) => {
             const data = snap.data(); if(!data) return;
-            const closed = data.status === "reset_wszystkich";
-            document.getElementById('start-screen').style.display = closed ? "flex" : "none";
-            document.getElementById('sidebar').style.display = closed ? "none" : "flex";
-            document.getElementById('main').style.display = closed ? "none" : "grid";
+            const isClosed = data.status === "reset_wszystkich";
+            document.getElementById('start-screen').style.display = isClosed ? "flex" : "none";
+            document.getElementById('sidebar').style.display = isClosed ? "none" : "flex";
+            document.getElementById('main').style.display = isClosed ? "none" : "grid";
+            
             document.getElementById('actionBtn').innerText = data.status === "otwarte" ? "ZAKOŃCZ GŁOSOWANIE" : "START GŁOSOWANIA";
             document.getElementById('actionBtn').className = data.status === "otwarte" ? "btn-stop" : "btn-vote";
-            document.getElementById('c').innerText = data.obecni?.length || 0;
+            document.getElementById('count').innerText = data.obecni?.length || 0;
             document.getElementById('lBtn').innerText = data.lista_lock ? "ODBLOKUJ LISTĘ" : "ZABLOKUJ LISTĘ";
-            const ulO = document.getElementById('lO'); ulO.innerHTML = "";
-            (data.obecni || []).forEach(o => { 
-                const safeName = o.replace(/[.#$/[\]]/g, "");
-                const hasVoted = data.lista_glosow && data.lista_glosow[safeName];
-                ulO.innerHTML += `<li><span class="radny-name">${o} ${hasVoted ? '<span class="status-voted">✓</span>' : ''}</span> <button class="del-mini" onclick="usunO('${o}')">WYRZUĆ</button></li>`; 
+            
+            const ul = document.getElementById('listO'); ul.innerHTML = "";
+            (data.obecni || []).forEach(o => {
+                const hasVoted = data.lista_glosow && data.lista_glosow[o.replace(/[.#$/[\]]/g, "")];
+                ul.innerHTML += `<li><span>${o} ${hasVoted ? '<span class="status-v">✓</span>' : ''}</span> <button class="del-btn" onclick="usunO('${o}')">WYRZUĆ</button></li>`;
             });
         });
 
         onSnapshot(collection(db, "kody_dostepu"), (s) => {
-            const ul = document.getElementById('lB'); ul.innerHTML = "";
-            s.forEach(d => { ul.innerHTML += `<li><span><span class="radny-code">${d.id}</span><span class="radny-name">${d.data().nazwisko}</span></span> <button class="del-mini" onclick="usunK('${d.id}')">X</button></li>`; });
+            const ul = document.getElementById('listB'); ul.innerHTML = "";
+            s.forEach(d => { ul.innerHTML += `<li><span><b>${d.id}</b> - ${d.data().nazwisko}</span> <button class="del-btn" onclick="usunK('${d.id}')">USUŃ</button></li>`; });
         });
 
         onSnapshot(collection(db, "archiwum_sesji"), (s) => {
             const div = document.getElementById('historia'); div.innerHTML = "";
             const order = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"];
-            s.forEach(d => { 
+            s.forEach(d => {
                 const data = d.data();
-                const keys = Object.keys(data.wyniki || {}).sort((a,b) => {
-                    let idxA = order.indexOf(a); let idxB = order.indexOf(b);
-                    return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
-                });
+                const keys = Object.keys(data.wyniki || {}).sort((a,b) => (order.indexOf(a) === -1 ? 99 : order.indexOf(a)) - (order.indexOf(b) === -1 ? 99 : order.indexOf(b)));
                 const res = keys.map(k => `${k}: ${data.wyniki[k]}`).join(' | ');
-                div.innerHTML += `<div class="hist-item"><b>${data.tytul}</b><br><small style="color:green">${res}</small></div>`; 
+                div.innerHTML += `<div class="hist-item"><b>${data.tytul}</b><br><small style="color:green">${res}</small></div>`;
             });
         });
 
         window.otworzSesje = async () => { await updateDoc(docRef, { status: "logowanie", obecni: [], wyniki: {}, lista_glosow: {}, tytul: "Oczekiwanie", lista_lock: false }); };
-
         window.toggleVote = async () => {
             const s = await getDoc(docRef);
             if(s.data().status === "otwarte") {
@@ -130,44 +123,31 @@
                 await setDoc(doc(collection(db, "archiwum_sesji")), { ...s.data(), czas: new Date().toLocaleString() });
             } else {
                 const t = document.getElementById('tytul').value || "Głosowanie";
-                let w = {};
-                if(document.getElementById('tryb').value === 'tn') w = {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0};
-                else document.getElementById('opcje').value.split(',').forEach(o => { if(o.trim()) w[o.trim().toUpperCase()] = 0; });
+                let w = document.getElementById('tryb').value === 'tn' ? {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0} : {};
+                if(document.getElementById('tryb').value === 'os') document.getElementById('opcje').value.split(',').forEach(o => { if(o.trim()) w[o.trim().toUpperCase()] = 0; });
                 await updateDoc(docRef, { tytul: t, status: "otwarte", wyniki: w, lista_glosow: {} });
             }
         };
-
         window.zakonczSesje = async () => {
             if(!confirm("Pobrać raport i zakończyć sesję?")) return;
             const q = await getDocs(collection(db, "archiwum_sesji"));
-            let r = `RAPORT Z SESJI - ${new Date().toLocaleString()}\n` + "=".repeat(40) + "\n";
+            let r = `RAPORT Z SESJI RSU ZSE GDAŃSK - ${new Date().toLocaleString()}\n` + "=".repeat(50) + "\n";
             q.forEach(d => {
-                const data = d.data();
-                r += `\nTEMAT: ${data.tytul}\nDATA: ${data.czas}\nWYNIKI: ${JSON.stringify(data.wyniki)}\n`;
-                Object.entries(data.lista_glosow || {}).forEach(([n, v]) => { r += `${n}: ${v}\n`; });
+                r += `\nUCHWAŁA: ${d.data().tytul}\nWYNIKI: ${JSON.stringify(d.data().wyniki)}\nLISTA IMIENNA:\n`;
+                Object.entries(d.data().lista_glosow || {}).forEach(([n, v]) => { r += `- ${n}: ${v}\n`; });
             });
             const blob = new Blob([r], {type: 'text/plain'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Raport_${new Date().toISOString().slice(0,10)}.txt`; a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Raport_Sesja_${new Date().toISOString().slice(0,10)}.txt`; a.click();
             await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], wyniki: {}, lista_glosow: {}, lista_lock: false });
             q.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
         };
-
         window.toggleL = async () => { const s = await getDoc(docRef); await updateDoc(docRef, { lista_lock: !s.data().lista_lock }); };
         window.dodajK = async () => {
             const k = document.getElementById('nK').value.trim(); const n = document.getElementById('nN').value.trim();
             if(k && n) { await setDoc(doc(db, "kody_dostepu", k), { nazwisko: n }); document.getElementById('nK').value=""; document.getElementById('nN').value=""; }
         };
-        window.usunK = async (id) => { 
-            const cSnap = await getDoc(doc(db, "kody_dostepu", id));
-            if(cSnap.exists()) {
-                const n = cSnap.data().nazwisko; const s = await getDoc(docRef);
-                await updateDoc(docRef, { obecni: (s.data().obecni || []).filter(o => o !== n) });
-            }
-            await deleteDoc(doc(db, "kody_dostepu", id)); 
-        };
+        window.usunK = async (id) => { await deleteDoc(doc(db, "kody_dostepu", id)); };
         window.usunO = async (n) => { const s = await getDoc(docRef); await updateDoc(docRef, { obecni: s.data().obecni.filter(o => o !== n) }); };
     </script>
 </body>
 </html>
-
-
