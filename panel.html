@@ -7,13 +7,14 @@
         body { font-family: sans-serif; background: #fdfdfd; display: flex; gap: 15px; padding: 15px; font-size: 14px; }
         .box { flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
         h3 { border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 0; }
-        input, button { width: 100%; padding: 10px; margin: 4px 0; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
+        input, select, button { width: 100%; padding: 10px; margin: 4px 0; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
         button { cursor: pointer; font-weight: bold; background: #3498db; color: white; border: none; }
         .btn-red { background: #e74c3c; }
         .btn-green { background: #27ae60; }
         .small-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
         .small-list li { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #f9f9f9; font-size: 12px; }
         .del-btn { width: auto; padding: 2px 6px; background: #c0392b; font-size: 10px; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
     </style>
 </head>
 <body>
@@ -21,6 +22,17 @@
     <div class="box">
         <h3>Głosowanie</h3>
         <input type="text" id="tytul" placeholder="Temat uchwały">
+        
+        <label>Tryb wyboru:</label>
+        <select id="tryb" onchange="document.getElementById('opcjeDiv').style.display = this.value=='osoby'?'block':'none'">
+            <option value="tak_nie">ZA / PRZECIW / WSTRZYMAŁO SIĘ</option>
+            <option value="osoby">LISTA WŁASNA (np. nazwiska)</option>
+        </select>
+        
+        <div id="opcjeDiv" style="display:none;">
+            <input type="text" id="listaOsob" placeholder="Opcja 1, Opcja 2, Opcja 3...">
+        </div>
+
         <button class="btn-green" onclick="uruchom()">START GŁOSOWANIA</button>
         <button onclick="zamknijGlosowanie()">ZAKOŃCZ GŁOSOWANIE</button>
         <button style="background:#2c3e50" id="lockBtn" onclick="toggleLock()">ZABLOKUJ LISTĘ</button>
@@ -85,19 +97,15 @@
             const imie = document.getElementById('newImie').value.trim();
             const nazwisko = document.getElementById('newNazwisko').value.trim();
             const opis = document.getElementById('newOpis').value.trim();
-            
             if(!kod || !imie || !nazwisko) return alert("Wypełnij pola!");
-            
             await setDoc(doc(db, "kody_dostepu", kod), { imie, nazwisko, opis });
-            
-            // Czyszczenie pól po dodaniu
             document.getElementById('newKod').value = "";
             document.getElementById('newImie').value = "";
             document.getElementById('newNazwisko').value = "";
             document.getElementById('newOpis').value = "";
         };
 
-        window.usunKod = async (id) => { if(confirm("Usunąć kod dostępu? Radny zostanie wylogowany.")) await deleteDoc(doc(db, "kody_dostepu", id)); };
+        window.usunKod = async (id) => { if(confirm("Usunąć kod dostępu?")) await deleteDoc(doc(db, "kody_dostepu", id)); };
 
         window.usunObecnego = async (nazwa) => {
             const snap = await getDoc(docRef);
@@ -112,7 +120,25 @@
 
         window.uruchom = async () => {
             const t = document.getElementById('tytul').value || "Głosowanie";
-            await updateDoc(docRef, { tytul: t, wyniki: { "ZA": 0, "PRZECIW": 0, "WSTRZYMAŁO SIĘ": 0 }, lista_glosow: {}, status: "otwarte", tryb: "reset" });
+            const tryb = document.getElementById('tryb').value;
+            let w = {};
+            
+            if(tryb === 'tak_nie') {
+                w = { "ZA": 0, "PRZECIW": 0, "WSTRZYMAŁO SIĘ": 0 };
+            } else {
+                const lista = document.getElementById('listaOsob').value.split(',');
+                lista.forEach(o => { if(o.trim()) w[o.trim()] = 0; });
+                if(Object.keys(w).length === 0) return alert("Podaj chociaż jedną opcję!");
+            }
+
+            await updateDoc(docRef, { 
+                tytul: t, 
+                wyniki: w, 
+                lista_glosow: {}, 
+                status: "otwarte", 
+                tryb: "reset" 
+            });
+            alert("Głosowanie uruchomione!");
         };
 
         window.zamknijGlosowanie = async () => {
@@ -122,12 +148,18 @@
         };
 
         window.zakonczSesje = async () => {
-            if(!confirm("Koniec sesji?")) return;
+            if(!confirm("Pobrać raport i wylogować wszystkich?")) return;
             const query = await getDocs(collection(db, "archiwum_sesji"));
-            let r = "RAPORT SESJI\n";
-            query.forEach(d => r += `\nUCHWAŁA: ${d.data().tytul}\nZA: ${d.data().wyniki.ZA}, PRZECIW: ${d.data().wyniki.PRZECIW}\n`);
+            let r = "RAPORT KOŃCOWY SESJI\n====================\n";
+            query.forEach(d => {
+                const data = d.data();
+                r += `\nUCHWAŁA: ${data.tytul}\n`;
+                Object.entries(data.wyniki).forEach(([k,v]) => r += `${k}: ${v} | `);
+                r += `\nLISTA IMIENNA:\n${JSON.stringify(data.lista_glosow, null, 2)}\n`;
+                r += `--------------------\n`;
+            });
             const blob = new Blob([r], {type:'text/plain'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Sesja.txt"; a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Pelny_Raport_Sesji.txt"; a.click();
             await setDoc(docRef, { obecni: [], lista_lock: false, status: "reset_wszystkich", wyniki: {}, tytul: "Oczekiwanie..." });
             query.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
         };
