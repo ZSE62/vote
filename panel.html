@@ -53,7 +53,7 @@
 
     <div class="main" id="main">
         <div class="card">
-            <h3>Obecni (<span id="c">0</span>) <button onclick="toggleL()" id="lBtn" style="width:auto; float:right; padding:5px; font-size:10px; background:#eee;">ZABLOKUJ</button></h3>
+            <h3>Obecni (<span id="c">0</span>) <button onclick="toggleL()" id="lBtn" style="width:auto; float:right; padding:5px; font-size:10px; background:#eee;">ZABLOKUJ LISTĘ</button></h3>
             <div class="scroll-area"><ul id="lO" class="small-list"></ul></div>
         </div>
         <div class="card">
@@ -112,7 +112,7 @@
         window.toggleVote = async () => {
             const s = await getDoc(docRef);
             if(s.data().status === "otwarte") {
-                await updateDoc(docRef, { status: "zamkniete" }); // To wyzwala pokazanie wyników na tablicy
+                await updateDoc(docRef, { status: "zamkniete" });
                 await setDoc(doc(collection(db, "archiwum_sesji")), { ...s.data(), czas: new Date().toLocaleString() });
             } else {
                 const t = document.getElementById('tytul').value || "Głosowanie";
@@ -144,7 +144,14 @@
             const k = document.getElementById('nK').value.trim(); const n = document.getElementById('nN').value.trim();
             if(k && n) { await setDoc(doc(db, "kody_dostepu", k), { nazwisko: n }); document.getElementById('nK').value=""; document.getElementById('nN').value=""; }
         };
-        window.usunK = async (id) => { await deleteDoc(doc(db, "kody_dostepu", id)); };
+        window.usunK = async (id) => { 
+            const cSnap = await getDoc(doc(db, "kody_dostepu", id));
+            if(cSnap.exists()) {
+                const n = cSnap.data().nazwisko; const s = await getDoc(docRef);
+                await updateDoc(docRef, { obecni: (s.data().obecni || []).filter(o => o !== n) });
+            }
+            await deleteDoc(doc(db, "kody_dostepu", id)); 
+        };
         window.usunO = async (n) => { const s = await getDoc(docRef); await updateDoc(docRef, { obecni: s.data().obecni.filter(o => o !== n) }); };
     </script>
 </body>
