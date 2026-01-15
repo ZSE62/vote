@@ -4,52 +4,63 @@
     <meta charset="UTF-8">
     <title>Panel Administratora Sesji</title>
     <style>
-        body { font-family: sans-serif; background: #fdfdfd; display: flex; gap: 15px; padding: 15px; font-size: 14px; }
-        .box { flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        h3 { border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 0; color: #2c3e50; }
-        input, select, button { width: 100%; padding: 10px; margin: 4px 0; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { cursor: pointer; font-weight: bold; background: #3498db; color: white; border: none; transition: 0.2s; }
-        button:hover { opacity: 0.9; }
-        .btn-red { background: #e74c3c; }
-        .btn-green { background: #27ae60; }
-        .small-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
-        .small-list li { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #f9f9f9; font-size: 12px; }
-        .del-btn { width: auto; padding: 2px 8px; background: #c0392b; font-size: 10px; margin: 0; }
+        :root { --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; }
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; display: flex; height: 100vh; }
+        .sidebar { width: 360px; background: white; border-right: 1px solid #ddd; padding: 20px; display: flex; flex-direction: column; }
+        .main-content { flex: 1; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; overflow-y: auto; }
+        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h3 { margin-top: 0; color: var(--dark); border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 15px; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 6px; border: 1px solid #ddd; box-sizing: border-box; }
+        .btn-start-session { background: var(--primary); color: white; font-weight: bold; border: none; cursor: pointer; }
+        .btn-vote { background: var(--success); color: white; font-weight: bold; border: none; cursor: pointer; height: 60px; font-size: 16px; }
+        .btn-stop-vote { background: var(--danger); }
+        .btn-close-session { background: transparent; color: var(--danger); border: 1px solid var(--danger); cursor: pointer; font-weight: bold; }
+        .status-box { padding: 10px; border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 15px; background: #eee; }
+        .status-online { background: #e8f5e9; color: var(--success); border: 1px solid var(--success); }
+        .small-list { list-style: none; padding: 0; }
+        .small-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .del-btn { width: auto; padding: 2px 8px; background: #fff; color: var(--danger); border: 1px solid var(--danger); font-size: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="box">
-        <h3>Głosowanie</h3>
-        <input type="text" id="tytul" placeholder="Temat uchwały">
-        <label>Tryb:</label>
-        <select id="tryb" onchange="document.getElementById('opcjeDiv').style.display = this.value=='osoby'?'block':'none'">
-            <option value="tak_nie">ZA / PRZECIW / WSTRZYMAŁO SIĘ</option>
-            <option value="osoby">LISTA WŁASNA (np. nazwiska)</option>
-        </select>
-        <div id="opcjeDiv" style="display:none;">
-            <input type="text" id="listaOsob" placeholder="Opcja 1, Opcja 2 (po przecinku)">
+    <div class="sidebar">
+        <div id="statusIndicator" class="status-box">SESJA ZAMKNIĘTA</div>
+        
+        <div id="sessionStartArea">
+            <button class="btn-start-session" onclick="otworzSesje()">OTWÓRZ SESJĘ (Zezwól na logowanie)</button>
         </div>
-        <button class="btn-green" onclick="uruchom()">START GŁOSOWANIA</button>
-        <button onclick="zamknijGlosowanie()">ZAKOŃCZ GŁOSOWANIE</button>
-        <button style="background:#2c3e50" id="lockBtn" onclick="toggleLock()">ZABLOKUJ LISTĘ</button>
-        <hr>
-        <button class="btn-red" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ & RAPORT</button>
+
+        <div id="voteArea" style="display:none; border-top: 1px solid #eee; padding-top: 10px;">
+            <h3>Sterowanie Głosowaniem</h3>
+            <input type="text" id="tytul" placeholder="Temat uchwały...">
+            <select id="tryb" onchange="document.getElementById('opcjeDiv').style.display = this.value=='osoby'?'block':'none'">
+                <option value="tak_nie">ZA / PRZECIW / WSTRZ.</option>
+                <option value="osoby">LISTA WŁASNA</option>
+            </select>
+            <div id="opcjeDiv" style="display:none;"><input type="text" id="listaOsob" placeholder="Opcja 1, Opcja 2..."></div>
+            <button id="btnToggleVote" class="btn-vote" onclick="toggleVote()">START GŁOSOWANIA</button>
+        </div>
+
+        <div style="margin-top: auto;">
+            <button class="btn-close-session" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ & RAPORT</button>
+        </div>
     </div>
 
-    <div class="box">
-        <h3>Obecni (<span id="countObecni">0</span>)</h3>
-        <ul id="listaObecnych" class="small-list"></ul>
-    </div>
-
-    <div class="box">
-        <h3>Baza Radnych</h3>
-        <input type="text" id="newImie" placeholder="Imię">
-        <input type="text" id="newNazwisko" placeholder="Nazwisko">
-        <input type="text" id="newOpis" placeholder="Opis/Klasa">
-        <input type="text" id="newKod" placeholder="KOD">
-        <button class="btn-green" onclick="dodajKod()">DODAJ KOD</button>
-        <ul id="bazaKodow" class="small-list"></ul>
+    <div class="main-content">
+        <div class="card">
+            <h3>Obecni Radni (<span id="countObecni">0</span>) 
+                <button onclick="toggleLock()" id="lockBtn" style="width:auto; float:right; padding:2px 5px; margin:0; font-size:10px;">ZABLOKUJ LISTĘ</button>
+            </h3>
+            <ul id="listaObecnych" class="small-list"></ul>
+        </div>
+        <div class="card">
+            <h3>Baza Kodów</h3>
+            <input type="text" id="newKod" placeholder="Kod">
+            <input type="text" id="newNazwisko" placeholder="Nazwisko i Imię">
+            <button onclick="dodajKod()" style="background:var(--dark); color:white; border:none; cursor:pointer;">DODAJ RADNEGO</button>
+            <ul id="bazaKodow" class="small-list" style="margin-top:15px"></ul>
+        </div>
     </div>
 
     <script type="module">
@@ -69,15 +80,44 @@
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
+        let statusSesji = "zamknieta";
+
         onSnapshot(docRef, (snap) => {
             const data = snap.data();
             if(!data) return;
+            statusSesji = data.status;
+
+            const statusInd = document.getElementById('statusIndicator');
+            const sessionStartBtn = document.getElementById('sessionStartArea');
+            const voteArea = document.getElementById('voteArea');
+            const btnVote = document.getElementById('btnToggleVote');
+
+            if(statusSesji === "zamknieta" || statusSesji === "reset_wszystkich") {
+                statusInd.innerText = "SESJA ZAMKNIĘTA";
+                statusInd.className = "status-box";
+                sessionStartBtn.style.display = "block";
+                voteArea.style.display = "none";
+            } else {
+                statusInd.innerText = "SESJA OTWARTA";
+                statusInd.className = "status-box status-online";
+                sessionStartBtn.style.display = "none";
+                voteArea.style.display = "block";
+                
+                if(statusSesji === "otwarte") {
+                    btnVote.innerText = "ZAKOŃCZ GŁOSOWANIE";
+                    btnVote.className = "btn-vote btn-stop-vote";
+                } else {
+                    btnVote.innerText = "START GŁOSOWANIA";
+                    btnVote.className = "btn-vote";
+                }
+            }
+
             document.getElementById('countObecni').innerText = data.obecni?.length || 0;
-            document.getElementById('lockBtn').innerText = data.lista_lock ? "OTWÓRZ LISTĘ" : "ZABLOKUJ LISTĘ";
+            document.getElementById('lockBtn').innerText = data.lista_lock ? "ODBLOKUJ" : "ZABLOKUJ";
             const ul = document.getElementById('listaObecnych');
             ul.innerHTML = "";
             (data.obecni || []).forEach(o => {
-                ul.innerHTML += `<li>${o} <button class="del-btn" onclick="usunObecnego('${o}')">WYRZUĆ</button></li>`;
+                ul.innerHTML += `<li>${o} <button class="del-btn" onclick="usunObecnego('${o}')">USUŃ</button></li>`;
             });
         });
 
@@ -85,37 +125,51 @@
             const ul = document.getElementById('bazaKodow');
             ul.innerHTML = "";
             snap.forEach(d => {
-                ul.innerHTML += `<li><b>${d.id}</b>: ${d.data().imie} ${d.data().nazwisko} <button class="del-btn" onclick="usunKod('${d.id}')">USUŃ</button></li>`;
+                ul.innerHTML += `<li><b>${d.id}</b>: ${d.data().nazwisko} <button class="del-btn" onclick="usunKod('${d.id}')">X</button></li>`;
             });
         });
 
+        window.otworzSesje = async () => {
+            await updateDoc(docRef, { status: "logowanie", obecni: [], lista_lock: false, tytul: "Oczekiwanie na głosowanie" });
+        };
+
+        window.toggleVote = async () => {
+            if(statusSesji === "otwarte") {
+                const snap = await getDoc(docRef);
+                await updateDoc(docRef, { status: "zamkniete_wyniki" });
+                await setDoc(doc(collection(db, "archiwum_sesji")), { ...snap.data(), data_godz: new Date().toLocaleString() });
+            } else {
+                const t = document.getElementById('tytul').value || "Głosowanie";
+                const tryb = document.getElementById('tryb').value;
+                let w = {};
+                if(tryb === 'tak_nie') w = { "ZA": 0, "PRZECIW": 0, "WSTRZYMAŁO SIĘ": 0 };
+                else document.getElementById('listaOsob').value.split(',').forEach(o => { if(o.trim()) w[o.trim().toUpperCase()] = 0; });
+                await updateDoc(docRef, { tytul: t, wyniki: w, lista_glosow: {}, status: "otwarte", tryb: "reset" });
+            }
+        };
+
         window.dodajKod = async () => {
             const kod = document.getElementById('newKod').value.trim();
-            const imie = document.getElementById('newImie').value.trim();
             const nazwisko = document.getElementById('newNazwisko').value.trim();
-            const opis = document.getElementById('newOpis').value.trim();
-            if(!kod || !imie || !nazwisko) return alert("Brak danych!");
-            await setDoc(doc(db, "kody_dostepu", kod), { imie, nazwisko, opis });
-            document.getElementById('newKod').value = ""; document.getElementById('newImie').value = ""; document.getElementById('newNazwisko').value = ""; document.getElementById('newOpis').value = "";
+            if(!kod || !nazwisko) return alert("Wpisz kod i nazwisko!");
+            await setDoc(doc(db, "kody_dostepu", kod), { imie: "", nazwisko: nazwisko, opis: "" });
+            document.getElementById('newKod').value = ""; document.getElementById('newNazwisko').value = "";
         };
 
         window.usunKod = async (id) => {
-            if(!confirm("Usunąć kod i wylogować radnego?")) return;
-            const codeSnap = await getDoc(doc(db, "kody_dostepu", id));
-            if (codeSnap.exists()) {
-                const d = codeSnap.data();
-                const nazwaFull = `${d.imie} ${d.nazwisko} (${d.opis})`;
-                const voteSnap = await getDoc(docRef);
-                const nowiObecni = (voteSnap.data().obecni || []).filter(o => o !== nazwaFull);
-                await updateDoc(docRef, { obecni: nowiObecni });
-            }
+            if(!confirm("Usunąć?")) return;
             await deleteDoc(doc(db, "kody_dostepu", id));
         };
 
-        window.usunObecnego = async (nazwa) => {
-            const snap = await getDoc(docRef);
-            const obecni = (snap.data().obecni || []).filter(o => o !== nazwa);
-            await updateDoc(docRef, { obecni: obecni });
+        window.zakonczSesje = async () => {
+            if(!confirm("Zakończyć sesję i pobrać raport?")) return;
+            const query = await getDocs(collection(db, "archiwum_sesji"));
+            let r = "RAPORT SESJI\n";
+            query.forEach(d => r += `\n${d.data().tytul}: ${JSON.stringify(d.data().wyniki)}\n`);
+            const blob = new Blob([r], {type:'text/plain'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Raport.txt"; a.click();
+            await setDoc(docRef, { status: "reset_wszystkich", obecni: [], lista_lock: false });
+            query.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
         };
 
         window.toggleLock = async () => {
@@ -123,35 +177,9 @@
             await updateDoc(docRef, { lista_lock: !snap.data().lista_lock });
         };
 
-        window.uruchom = async () => {
-            const t = document.getElementById('tytul').value || "Głosowanie";
-            const tryb = document.getElementById('tryb').value;
-            let w = {};
-            if(tryb === 'tak_nie') {
-                w = { "ZA": 0, "PRZECIW": 0, "WSTRZYMAŁO SIĘ": 0 };
-            } else {
-                document.getElementById('listaOsob').value.split(',').forEach(o => { if(o.trim()) w[o.trim().toUpperCase()] = 0; });
-            }
-            await updateDoc(docRef, { tytul: t, wyniki: w, lista_glosow: {}, status: "otwarte", tryb: "reset" });
-        };
-
-        window.zamknijGlosowanie = async () => {
+        window.usunObecnego = async (n) => {
             const snap = await getDoc(docRef);
-            await updateDoc(docRef, { status: "zamkniete" });
-            await setDoc(doc(collection(db, "archiwum_sesji")), { ...snap.data(), data_godz: new Date().toLocaleString() });
-        };
-
-        window.zakonczSesje = async () => {
-            if(!confirm("Zakończyć sesję?")) return;
-            const query = await getDocs(collection(db, "archiwum_sesji"));
-            let r = "PROTOKÓŁ\n";
-            query.forEach(d => r += `\nUCHWAŁA: ${d.data().tytul}\nWYNIKI: ${JSON.stringify(d.data().wyniki)}\n`);
-            const blob = new Blob([r], {type:'text/plain'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Sesja.txt"; a.click();
-            
-            // RESET SESJI DO STANU LOGOWANIA
-            await setDoc(docRef, { obecni: [], lista_lock: false, status: "logowanie", wyniki: {}, tytul: "Oczekiwanie" });
-            query.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
+            await updateDoc(docRef, { obecni: snap.data().obecni.filter(o => o !== n) });
         };
     </script>
 </body>
