@@ -32,37 +32,30 @@
 
     <div class="sidebar" id="sidebar">
         <div class="card" style="margin-bottom: 20px;">
-    <h3>Nowe Głosowanie</h3>
-    <label style="font-size: 0.8rem; color: #666;">Temat uchwały:</label>
-    <input type="text" id="tytul" class="input-short" placeholder="Np. Uchwała nr 1">
-    
-    <select id="tryb" class="input-short" onchange="document.getElementById('custom-options').style.display = (this.value === 'os' ? 'block' : 'none')">
-        <option value="tn">ZA / PRZECIW / WSTRZYMAŁO SIĘ</option>
-        <option value="os">LISTA WŁASNA (NAZWISKA)</option>
-    </select>
-
-    <div id="custom-options" style="display: none;">
-        <label style="font-size: 0.8rem; color: #666;">Nazwiska (po przecinku):</label>
-        <input type="text" id="opcje" class="input-short" placeholder="Opcja 1, Opcja 2...">
-    </div>
-
-    <button id="actionBtn" class="btn-vote" onclick="toggleVote()">START GŁOSOWANIA</button>
-</div>
-        
+            <h3>Nowe Głosowanie</h3>
+            <label style="font-size: 0.8rem; color: #666;">Temat uchwały:</label>
+            <input type="text" id="tytul" class="input-short" placeholder="Np. Uchwała nr 1">
+            <select id="tryb" class="input-short" onchange="document.getElementById('custom-options').style.display = (this.value === 'os' ? 'block' : 'none')">
+                <option value="tn">ZA / PRZECIW / WSTRZYMAŁO SIĘ</option>
+                <option value="os">LISTA WŁASNA (NAZWISKA)</option>
+            </select>
+            <div id="custom-options" style="display: none;">
+                <input type="text" id="opcje" class="input-short" placeholder="Opcja 1, Opcja 2...">
+            </div>
+            <button id="actionBtn" class="btn-vote" onclick="toggleVote()">START GŁOSOWANIA</button>
+        </div>
         <div class="card" style="flex: 1;">
             <h3>Historia Sesji</h3>
             <div id="historia" class="scroll-area"></div>
         </div>
-
         <button style="background:none; border: 1px solid var(--danger); color: var(--danger); margin-top: 10px;" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ & RAPORT</button>
     </div>
 
     <div class="main" id="main">
         <div class="card">
-            <h3>Obecni Radni (<span id="c">0</span>)</h3>
+            <h3>Obecni (<span id="c">0</span>) <button onclick="toggleL()" id="lBtn" style="width:auto; float:right; padding:5px; font-size:10px; background:#eee;">ZABLOKUJ</button></h3>
             <div class="scroll-area"><ul id="lO" class="small-list"></ul></div>
         </div>
-
         <div class="card">
             <h3>Baza Radnych</h3>
             <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 5px;">
@@ -96,11 +89,10 @@
             document.getElementById('start-screen').style.display = closed ? "flex" : "none";
             document.getElementById('sidebar').style.display = closed ? "none" : "flex";
             document.getElementById('main').style.display = closed ? "none" : "grid";
-
-            const btn = document.getElementById('actionBtn');
-            btn.innerText = data.status === "otwarte" ? "ZAKOŃCZ GŁOSOWANIE" : "START GŁOSOWANIA";
-            btn.className = data.status === "otwarte" ? "btn-stop" : "btn-vote";
+            document.getElementById('actionBtn').innerText = data.status === "otwarte" ? "ZAKOŃCZ GŁOSOWANIE" : "START GŁOSOWANIA";
+            document.getElementById('actionBtn').className = data.status === "otwarte" ? "btn-stop" : "btn-vote";
             document.getElementById('c').innerText = data.obecni?.length || 0;
+            document.getElementById('lBtn').innerText = data.lista_lock ? "ODBLOKUJ LISTĘ" : "ZABLOKUJ LISTĘ";
             const ul = document.getElementById('lO'); ul.innerHTML = "";
             (data.obecni || []).forEach(o => { ul.innerHTML += `<li><span class="radny-name">${o}</span> <button class="del-mini" onclick="usunO('${o}')">WYRZUĆ</button></li>`; });
         });
@@ -115,47 +107,45 @@
             s.forEach(d => { div.innerHTML += `<div class="hist-item"><b>${d.data().tytul}</b></div>`; });
         });
 
-        window.otworzSesje = async () => { await updateDoc(docRef, { status: "logowanie", obecni: [], wyniki: {}, lista_glosow: {}, tytul: "Oczekiwanie" }); };
+        window.otworzSesje = async () => { await updateDoc(docRef, { status: "logowanie", obecni: [], wyniki: {}, lista_glosow: {}, tytul: "Oczekiwanie", lista_lock: false }); };
 
         window.toggleVote = async () => {
             const s = await getDoc(docRef);
             if(s.data().status === "otwarte") {
-                await updateDoc(docRef, { status: "zamkniete" });
-                await setDoc(doc(collection(db, "archiwum_sesji")), { ...s.data(), data_zakonczenia: new Date().toLocaleString() });
+                await updateDoc(docRef, { status: "zamkniete" }); // To wyzwala pokazanie wyników na tablicy
+                await setDoc(doc(collection(db, "archiwum_sesji")), { ...s.data(), czas: new Date().toLocaleString() });
             } else {
                 const t = document.getElementById('tytul').value || "Głosowanie";
                 let w = {};
-                if(document.getElementById('tryb').value === 'tn') {
-                    w = {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0};
-                } else {
-                    document.getElementById('opcje').value.split(',').forEach(o => { if(o.trim()) w[o.trim().toUpperCase()] = 0; });
-                }
+                if(document.getElementById('tryb').value === 'tn') w = {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0};
+                else document.getElementById('opcje').value.split(',').forEach(o => { if(o.trim()) w[o.trim().toUpperCase()] = 0; });
                 await updateDoc(docRef, { tytul: t, status: "otwarte", wyniki: w, lista_glosow: {} });
             }
         };
 
+        window.toggleL = async () => { const s = await getDoc(docRef); await updateDoc(docRef, { lista_lock: !s.data().lista_lock }); };
+
         window.zakonczSesje = async () => {
             if(!confirm("Pobrać raport i zakończyć sesję?")) return;
             const q = await getDocs(collection(db, "archiwum_sesji"));
-            let r = "RAPORT SESJI\n" + "=".repeat(30) + "\n";
+            let r = `RAPORT Z SESJI - ${new Date().toLocaleString()}\n` + "=".repeat(40) + "\n";
             q.forEach(d => {
                 const data = d.data();
-                r += `\nTEMAT: ${data.tytul}\nWYNIKI: ${JSON.stringify(data.wyniki)}\n`;
+                r += `\nTEMAT: ${data.tytul}\nDATA: ${data.czas}\nWYNIKI: ${JSON.stringify(data.wyniki)}\n`;
                 Object.entries(data.lista_glosow || {}).forEach(([n, v]) => { r += `${n}: ${v}\n`; });
             });
             const blob = new Blob([r], {type: 'text/plain'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Raport.txt"; a.click();
-            await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], wyniki: {}, lista_glosow: {} });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Raport_${new Date().toISOString().slice(0,10)}.txt`; a.click();
+            await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], wyniki: {}, lista_glosow: {}, lista_lock: false });
             q.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
         };
 
         window.dodajK = async () => {
             const k = document.getElementById('nK').value.trim(); const n = document.getElementById('nN').value.trim();
-            if(k && n) { await setDoc(doc(db, "kody_dostepu", k), { nazwisko: n }); document.getElementById('nK').value = ""; document.getElementById('nN').value = ""; }
+            if(k && n) { await setDoc(doc(db, "kody_dostepu", k), { nazwisko: n }); document.getElementById('nK').value=""; document.getElementById('nN').value=""; }
         };
         window.usunK = async (id) => { await deleteDoc(doc(db, "kody_dostepu", id)); };
         window.usunO = async (n) => { const s = await getDoc(docRef); await updateDoc(docRef, { obecni: s.data().obecni.filter(o => o !== n) }); };
     </script>
 </body>
 </html>
-
