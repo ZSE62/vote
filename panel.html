@@ -2,37 +2,40 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Sterowania</title>
+    <title>Panel Sesji - Zarządzanie</title>
     <style>
-        body { font-family: sans-serif; background: #fdfdfd; color: #333; padding: 20px; }
-        .box { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 10px; border: 1px solid #ddd; }
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem; box-sizing: border-box; }
-        button { background: #2980b9; color: white; font-weight: bold; cursor: pointer; border: none; }
-        .stop { background: #d35400; }
-        .reset { background: #c0392b; margin-top: 20px; }
-        .counter { font-size: 1.5rem; text-align: center; margin: 15px 0; font-weight: bold; color: #27ae60; border: 2px solid #27ae60; padding: 10px; border-radius: 5px; }
+        body { font-family: sans-serif; background: #fdfdfd; display: flex; gap: 20px; padding: 20px; }
+        .box { flex: 1; background: white; padding: 20px; border-radius: 10px; border: 1px solid #ddd; }
+        .obecni-list { list-style: none; padding: 0; }
+        .obecni-list li { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
+        .remove-btn { background: #c0392b; color: white; border: none; padding: 2px 8px; cursor: pointer; border-radius: 3px; }
+        button { width: 100%; padding: 12px; margin: 5px 0; cursor: pointer; font-weight: bold; border-radius: 5px; border: none; }
+        .start { background: #27ae60; color: white; }
+        .stop { background: #d35400; color: white; }
+        .lock { background: #2c3e50; color: white; }
+        .reset-session { background: #7f8c8d; color: white; }
+        input { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>Panel Sterowania</h2>
-        <div class="counter">ODDANYCH GŁOSÓW: <span id="liveCount">0</span></div>
-        
-        <input type="text" id="tytul" placeholder="Temat głosowania">
-        <select id="tryb" onchange="document.getElementById('osobyDiv').style.display = this.value=='osoby'?'block':'none'">
-            <option value="tak_nie">ZA / PRZECIW / WSTRZYMAŁO SIĘ</option>
-            <option value="osoby">LISTA WŁASNA (oddziel przecinkiem)</option>
-        </select>
-        <div id="osobyDiv" style="display:none;"><input type="text" id="listaOsob" placeholder="Opcja 1, Opcja 2..."></div>
+        <h2>Sterowanie Głosowaniem</h2>
+        <input type="text" id="tytul" placeholder="Temat uchwały">
+        <button class="start" onclick="uruchom()">OTWÓRZ GŁOSOWANIE</button>
+        <button class="stop" onclick="zamknij()">ZAKOŃCZ I ARCHIWIZUJ</button>
+        <hr>
+        <button class="lock" id="lockBtn" onclick="toggleLock()">ZABLOKUJ LISTĘ OBECNOŚCI</button>
+        <button class="reset-session" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ (RAPORT)</button>
+    </div>
 
-        <button onclick="uruchom()">START GŁOSOWANIA</button>
-        <button class="stop" onclick="zamknij()">ZAMKNIJ I POBIERZ RAPORT</button>
-        <button class="reset" onclick="resetuj()">CAŁKOWITY RESET</button>
+    <div class="box">
+        <h3>Lista Obecności (<span id="count">0</span>)</h3>
+        <ul id="listaObecnych" class="obecni-list"></ul>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM",
@@ -46,62 +49,66 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
+        const archiwumRef = collection(db, "archiwum_sesji");
+
+        let isLocked = false;
 
         onSnapshot(docRef, (snap) => {
             const data = snap.data();
-            if(data && data.wyniki) {
-                const total = Object.values(data.wyniki).reduce((a, b) => a + b, 0);
-                document.getElementById('liveCount').innerText = total;
-            } else { document.getElementById('liveCount').innerText = "0"; }
+            if(!data) return;
+            
+            const obecni = data.obecni || [];
+            isLocked = data.lista_lock || false;
+            document.getElementById('lockBtn').innerText = isLocked ? "OTWÓRZ LISTĘ OBECNOŚCI" : "ZABLOKUJ LISTĘ OBECNOŚCI";
+            document.getElementById('count').innerText = obecni.length;
+
+            const ul = document.getElementById('listaObecnych');
+            ul.innerHTML = "";
+            obecni.forEach(osoba => {
+                const li = document.createElement('li');
+                li.innerHTML = `${osoba} <button class="remove-btn" onclick="usunOsobe('${osoba}')">USUŃ</button>`;
+                ul.appendChild(li);
+            });
         });
+
+        window.usunOsobe = async (osoba) => {
+            const snap = await getDoc(docRef);
+            const obecni = snap.data().obecni.filter(o => o !== osoba);
+            await updateDoc(docRef, { obecni: obecni });
+        };
+
+        window.toggleLock = async () => {
+            await updateDoc(docRef, { lista_lock: !isLocked });
+        };
 
         window.uruchom = async () => {
             const t = document.getElementById('tytul').value || "Głosowanie";
-            const tryb = document.getElementById('tryb').value;
-            let w = tryb === 'tak_nie' ? { "ZA": 0, "PRZECIW": 0, "WSTRZYMAŁO SIĘ": 0 } : {};
-            if(tryb === 'osoby') document.getElementById('listaOsob').value.split(',').forEach(o => { if(o.trim()) w[o.trim()] = 0; });
-            await setDoc(docRef, { tytul: t, wyniki: w, tryb: tryb, status: "otwarte" });
-            alert("Głosowanie uruchomione!");
+            await updateDoc(docRef, { 
+                tytul: t, 
+                wyniki: { "ZA": 0, "PRZECIW": 0, "WSTRZYMAŁO SIĘ": 0 }, 
+                lista_glosow: {}, 
+                status: "otwarte",
+                tryb: "reset" 
+            });
         };
 
         window.zamknij = async () => {
-            await updateDoc(docRef, { status: "zamkniete" });
             const snap = await getDoc(docRef);
             const data = snap.data();
-            const teraz = new Date();
-            
-            let tekst = `URZĘDOWY RAPORT Z GŁOSOWANIA\n`;
-            tekst += `==========================================\n`;
-            tekst += `TEMAT: ${data.tytul.toUpperCase()}\n`;
-            tekst += `DATA: ${teraz.toLocaleDateString('pl-PL')}\n`;
-            tekst += `GODZINA: ${teraz.toLocaleTimeString('pl-PL')}\n`;
-            tekst += `==========================================\n\n`;
-            tekst += `WYNIKI SZCZEGÓŁOWE:\n`;
-            
-            let total = 0;
-            Object.entries(data.wyniki).forEach(([k, v]) => {
-                tekst += `- ${k.padEnd(20)} : ${v} głosów\n`;
-                total += v;
-            });
-            
-            tekst += `\n------------------------------------------\n`;
-            tekst += `SUMA WSZYSTKICH GŁOSÓW: ${total}\n`;
-            tekst += `==========================================\n`;
-            tekst += `Raport wygenerowany automatycznie.`;
-            
-            const blob = new Blob([tekst], { type: 'text/plain' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `Raport_${data.tytul.replace(/\s+/g, '_')}_${teraz.getHours()}${teraz.getMinutes()}.txt`;
-            a.click();
+            await updateDoc(docRef, { status: "zamkniete" });
+            await setDoc(doc(archiwumRef), { ...data, data_godz: new Date().toLocaleString() });
         };
 
-        window.resetuj = async () => {
-            if(confirm("Reset systemu wyczyści wyniki. Kontynuować?")) {
-                await setDoc(docRef, { tytul: "Oczekiwanie...", wyniki: {}, tryb: "reset", status: "reset" });
-            }
+        window.zakonczSesje = async () => {
+            const querySnapshot = await getDocs(archiwumRef);
+            let raport = `RAPORT SESJI\n================\n`;
+            querySnapshot.forEach(docSnap => {
+                const d = docSnap.data();
+                raport += `\nPUNKT: ${d.tytul}\nWYNIKI: ZA ${d.wyniki.ZA}, PRZECIW ${d.wyniki.PRZECIW}\nLISTA: ${JSON.stringify(d.lista_glosow)}\n`;
+            });
+            const blob = new Blob([raport], { type: 'text/plain' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Sesja.txt`; a.click();
         };
     </script>
 </body>
 </html>
-
