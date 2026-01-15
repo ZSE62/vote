@@ -11,7 +11,7 @@
         button { cursor: pointer; font-weight: bold; background: #3498db; color: white; border: none; }
         .btn-red { background: #e74c3c; }
         .btn-green { background: #27ae60; }
-        .small-list { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
+        .small-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
         .small-list li { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #f9f9f9; font-size: 12px; }
         .del-btn { width: auto; padding: 2px 6px; background: #c0392b; font-size: 10px; }
     </style>
@@ -59,7 +59,6 @@
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
-        // OBSŁUGA OBECNYCH
         onSnapshot(docRef, (snap) => {
             const data = snap.data();
             if(!data) return;
@@ -72,7 +71,6 @@
             });
         });
 
-        // OBSŁUGA BAZY KODÓW
         onSnapshot(collection(db, "kody_dostepu"), (snap) => {
             const ul = document.getElementById('bazaKodow');
             ul.innerHTML = "";
@@ -87,12 +85,19 @@
             const imie = document.getElementById('newImie').value.trim();
             const nazwisko = document.getElementById('newNazwisko').value.trim();
             const opis = document.getElementById('newOpis').value.trim();
-            if(!kod || !imie || !nazwisko) return alert("Wypełnij dane!");
+            
+            if(!kod || !imie || !nazwisko) return alert("Wypełnij pola!");
+            
             await setDoc(doc(db, "kody_dostepu", kod), { imie, nazwisko, opis });
-            alert("Dodano!");
+            
+            // Czyszczenie pól po dodaniu
+            document.getElementById('newKod').value = "";
+            document.getElementById('newImie').value = "";
+            document.getElementById('newNazwisko').value = "";
+            document.getElementById('newOpis').value = "";
         };
 
-        window.usunKod = async (id) => { if(confirm("Usunąć kod?")) await deleteDoc(doc(db, "kody_dostepu", id)); };
+        window.usunKod = async (id) => { if(confirm("Usunąć kod dostępu? Radny zostanie wylogowany.")) await deleteDoc(doc(db, "kody_dostepu", id)); };
 
         window.usunObecnego = async (nazwa) => {
             const snap = await getDoc(docRef);
@@ -123,7 +128,6 @@
             query.forEach(d => r += `\nUCHWAŁA: ${d.data().tytul}\nZA: ${d.data().wyniki.ZA}, PRZECIW: ${d.data().wyniki.PRZECIW}\n`);
             const blob = new Blob([r], {type:'text/plain'});
             const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Sesja.txt"; a.click();
-            
             await setDoc(docRef, { obecni: [], lista_lock: false, status: "reset_wszystkich", wyniki: {}, tytul: "Oczekiwanie..." });
             query.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
         };
