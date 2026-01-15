@@ -8,23 +8,31 @@
         body { font-family: sans-serif; background: #f4f7f6; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         #start-screen { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; background: #f4f7f6; z-index: 100; }
         .btn-start-big { padding: 30px 60px; font-size: 24px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        
         .sidebar { width: 320px; background: white; border-right: 1px solid #ddd; padding: 20px; display: none; flex-direction: column; }
         .main { flex: 1; padding: 20px; display: none; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
         .scroll-area { flex: 1; overflow-y: auto; margin-top: 10px; }
+        
         h3 { margin-top: 0; color: var(--dark); font-size: 1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         input, select { padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
         .input-short { width: 100%; max-width: 250px; }
+        
         button { padding: 10px; margin: 5px 0; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-vote { background: var(--success); color: white; }
         .btn-stop { background: var(--danger); color: white; }
         .btn-add { background: var(--dark); color: white; }
+
         .small-list { list-style: none; padding: 0; margin: 0; }
         .small-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #f9f9f9; font-size: 13px; }
-        .radny-name { font-weight: 500; color: #333; }
+        
+        .status-voted { color: var(--success); font-weight: bold; margin-left: 10px; }
+        .radny-name { font-weight: 500; color: #333; flex: 1; }
         .radny-code { color: #888; font-family: monospace; background: #eee; padding: 2px 5px; border-radius: 3px; margin-right: 10px; }
-        .del-mini { width: auto; padding: 4px 8px; margin: 0; background: #fff0f0; color: var(--danger); border: 1px solid #ffcccc; font-size: 10px; }
-        .hist-item { padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; }
+        
+        .del-mini { width: auto; padding: 4px 8px; margin-left: 10px; background: #fff0f0; color: var(--danger); border: 1px solid #ffcccc; font-size: 10px; }
+        .hist-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 12px; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -45,7 +53,7 @@
             <button id="actionBtn" class="btn-vote" onclick="toggleVote()">START GŁOSOWANIA</button>
         </div>
         <div class="card" style="flex: 1;">
-            <h3>Historia Sesji</h3>
+            <h3>Historia Głosowań</h3>
             <div id="historia" class="scroll-area"></div>
         </div>
         <button style="background:none; border: 1px solid var(--danger); color: var(--danger); margin-top: 10px;" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ & RAPORT</button>
@@ -56,6 +64,7 @@
             <h3>Obecni (<span id="c">0</span>) <button onclick="toggleL()" id="lBtn" style="width:auto; float:right; padding:5px; font-size:10px; background:#eee;">ZABLOKUJ LISTĘ</button></h3>
             <div class="scroll-area"><ul id="lO" class="small-list"></ul></div>
         </div>
+
         <div class="card">
             <h3>Baza Radnych</h3>
             <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 5px;">
@@ -89,12 +98,22 @@
             document.getElementById('start-screen').style.display = closed ? "flex" : "none";
             document.getElementById('sidebar').style.display = closed ? "none" : "flex";
             document.getElementById('main').style.display = closed ? "none" : "grid";
+            
             document.getElementById('actionBtn').innerText = data.status === "otwarte" ? "ZAKOŃCZ GŁOSOWANIE" : "START GŁOSOWANIA";
             document.getElementById('actionBtn').className = data.status === "otwarte" ? "btn-stop" : "btn-vote";
             document.getElementById('c').innerText = data.obecni?.length || 0;
             document.getElementById('lBtn').innerText = data.lista_lock ? "ODBLOKUJ LISTĘ" : "ZABLOKUJ LISTĘ";
-            const ul = document.getElementById('lO'); ul.innerHTML = "";
-            (data.obecni || []).forEach(o => { ul.innerHTML += `<li><span class="radny-name">${o}</span> <button class="del-mini" onclick="usunO('${o}')">WYRZUĆ</button></li>`; });
+            
+            const ulO = document.getElementById('lO'); ulO.innerHTML = "";
+            (data.obecni || []).forEach(o => { 
+                const safeName = o.replace(/[.#$/[\]]/g, "");
+                const hasVoted = data.lista_glosow && data.lista_glosow[safeName];
+                ulO.innerHTML += `
+                    <li>
+                        <span class="radny-name">${o} ${hasVoted ? '<span class="status-voted">✓</span>' : ''}</span> 
+                        <button class="del-mini" onclick="usunO('${o}')">WYRZUĆ</button>
+                    </li>`; 
+            });
         });
 
         onSnapshot(collection(db, "kody_dostepu"), (s) => {
@@ -104,7 +123,11 @@
 
         onSnapshot(collection(db, "archiwum_sesji"), (s) => {
             const div = document.getElementById('historia'); div.innerHTML = "";
-            s.forEach(d => { div.innerHTML += `<div class="hist-item"><b>${d.data().tytul}</b></div>`; });
+            s.forEach(d => { 
+                const data = d.data();
+                const res = Object.entries(data.wyniki || {}).map(([k,v]) => `${k}: ${v}`).join(' | ');
+                div.innerHTML += `<div class="hist-item"><b>${data.tytul}</b><br><small style="color:green">${res}</small></div>`; 
+            });
         });
 
         window.otworzSesje = async () => { await updateDoc(docRef, { status: "logowanie", obecni: [], wyniki: {}, lista_glosow: {}, tytul: "Oczekiwanie", lista_lock: false }); };
@@ -123,8 +146,6 @@
             }
         };
 
-        window.toggleL = async () => { const s = await getDoc(docRef); await updateDoc(docRef, { lista_lock: !s.data().lista_lock }); };
-
         window.zakonczSesje = async () => {
             if(!confirm("Pobrać raport i zakończyć sesję?")) return;
             const q = await getDocs(collection(db, "archiwum_sesji"));
@@ -140,6 +161,7 @@
             q.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
         };
 
+        window.toggleL = async () => { const s = await getDoc(docRef); await updateDoc(docRef, { lista_lock: !s.data().lista_lock }); };
         window.dodajK = async () => {
             const k = document.getElementById('nK').value.trim(); const n = document.getElementById('nN').value.trim();
             if(k && n) { await setDoc(doc(db, "kody_dostepu", k), { nazwisko: n }); document.getElementById('nK').value=""; document.getElementById('nN').value=""; }
