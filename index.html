@@ -48,32 +48,32 @@
         const docRef = doc(db, "ankiet", "vote");
 
         let userFullInfo = null;
+        let userCode = null;
         let votedInCurrentRound = false;
 
         window.zaloguj = async () => {
-            const code = document.getElementById('accessCode').value.trim();
-            if(!code) return;
+            userCode = document.getElementById('accessCode').value.trim();
+            if(!userCode) return;
 
-            // Sprawdzanie kodu w bazie
-            const codeSnap = await getDoc(doc(db, "kody_dostepu", code));
-            
-            if(!codeSnap.exists()) {
-                alert("Błędny kod dostępu!");
-                return;
-            }
+            const codeSnap = await getDoc(doc(db, "kody_dostepu", userCode));
+            if(!codeSnap.exists()) return alert("Błędny kod!");
 
             const userData = codeSnap.data();
-            const nazwa = `${userData.imie} ${userData.nazwisko} (${userData.opis})`;
+            userFullInfo = `${userData.imie} ${userData.nazwisko} (${userData.opis})`;
 
             const voteSnap = await getDoc(docRef);
-            if(voteSnap.data().lista_lock) return alert("Lista obecności zamknięta!");
-            if(voteSnap.data().obecni?.includes(nazwa)) return alert("Jesteś już zalogowany!");
+            if(voteSnap.data().lista_lock) return alert("Lista zamknięta!");
+            if(voteSnap.data().obecni?.includes(userFullInfo)) return alert("Użytkownik już zalogowany!");
 
-            userFullInfo = nazwa;
-            await updateDoc(docRef, { obecni: arrayUnion(nazwa) });
-            
+            await updateDoc(docRef, { obecni: arrayUnion(userFullInfo) });
             document.getElementById('loginArea').style.display = "none";
             document.getElementById('voteArea').style.display = "block";
+            
+            // Nasłuchiwanie czy kod dostępu wciąż istnieje
+            onSnapshot(doc(db, "kody_dostepu", userCode), (snap) => {
+                if (!snap.exists()) location.reload(); 
+            });
+
             startApp();
         };
 
@@ -84,7 +84,6 @@
                     location.reload();
                     return;
                 }
-
                 document.getElementById('title').innerText = data.tytul;
                 const div = document.getElementById('btns');
                 div.innerHTML = "";
@@ -111,18 +110,10 @@
                     b.innerText = key;
                     let c = key.toUpperCase().includes("ZA") ? "btn-za" : (key.toUpperCase().includes("PRZECIW") ? "btn-przeciw" : (key.toUpperCase().includes("WSTRZYM") ? "btn-wstrzymuje" : "btn-default"));
                     b.className = "btn " + c;
-
-                    if(votedInCurrentRound) {
-                        b.disabled = true;
-                        document.getElementById('msg').innerText = "Głos oddany.";
-                    }
-
+                    if(votedInCurrentRound) b.disabled = true;
                     b.onclick = async () => {
                         const safeName = userFullInfo.replace(/[.#$/[\]]/g, ""); 
-                        await updateDoc(docRef, { 
-                            [`wyniki.${key}`]: increment(1),
-                            [`lista_glosow.${safeName}`]: key 
-                        });
+                        await updateDoc(docRef, { [`wyniki.${key}`]: increment(1), [`lista_glosow.${safeName}`]: key });
                         votedInCurrentRound = true;
                     };
                     div.appendChild(b);
