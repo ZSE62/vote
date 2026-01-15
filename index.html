@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terminal Radnego</title>
     <style>
-        body { background: #fdfdfd; color: #333; font-family: sans-serif; text-align: center; padding: 20px; }
-        .login-box { max-width: 350px; margin: 80px auto; padding: 30px; background: white; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 1rem; }
+        body { font-family: sans-serif; text-align: center; background: #fdfdfd; padding: 20px; }
+        .login-box { max-width: 350px; margin: 80px auto; padding: 30px; background: white; border: 1px solid #ddd; border-radius: 12px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         .btn-login { background: #2980b9; color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 5px; }
         .btn { display: block; width: 100%; max-width: 400px; padding: 25px; margin: 15px auto; font-size: 1.4rem; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; }
         .btn-za { background: #27ae60; }
@@ -19,20 +19,20 @@
 </head>
 <body>
     <div id="loginArea" class="login-box">
-        <h3>Logowanie do Sesji</h3>
+        <h3>Logowanie</h3>
         <input type="text" id="accessCode" placeholder="Kod dostępu">
         <button class="btn-login" onclick="zaloguj()">WEJDŹ</button>
     </div>
 
     <div id="voteArea" style="display:none;">
-        <h2 id="title">Oczekiwanie...</h2>
+        <h2 id="title">Czekaj...</h2>
         <div id="btns"></div>
         <p id="msg"></p>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, increment, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM",
@@ -48,25 +48,19 @@
         const docRef = doc(db, "ankiet", "vote");
 
         let userFullInfo = null;
-        let votedInCurrentRound = false;
 
         window.zaloguj = async () => {
             const code = document.getElementById('accessCode').value.trim();
-            const vSnap = await getDoc(docRef);
-            if(vSnap.data().status === "reset_wszystkich") return alert("Sesja nie jest jeszcze otwarta!");
-
             const cSnap = await getDoc(doc(db, "kody_dostepu", code));
-            if(!cSnap.exists()) return alert("Zły kod!");
+            if(!cSnap.exists()) return alert("Błędny kod!");
 
             userFullInfo = cSnap.data().nazwisko;
-            if(vSnap.data().lista_lock) return alert("Lista zamknięta!");
+            const vSnap = await getDoc(docRef);
             if(vSnap.data().obecni?.includes(userFullInfo)) return alert("Już zalogowano!");
 
             await updateDoc(docRef, { obecni: arrayUnion(userFullInfo) });
             document.getElementById('loginArea').style.display = "none";
             document.getElementById('voteArea').style.display = "block";
-            
-            onSnapshot(doc(db, "kody_dostepu", code), (s) => { if(!s.exists()) location.reload(); });
             startApp();
         };
 
@@ -75,25 +69,42 @@
                 const data = snap.data();
                 if(!data || data.status === "reset_wszystkich" || !data.obecni?.includes(userFullInfo)) { location.reload(); return; }
 
+                const safeName = userFullInfo.replace(/[.#$/[\]]/g, "");
+                const juzGlosowal = data.lista_glosow && data.lista_glosow[safeName];
+
                 document.getElementById('title').innerText = data.tytul;
                 const div = document.getElementById('btns'); div.innerHTML = "";
 
-                if(data.status !== "otwarte") { document.getElementById('msg').innerText = "Głosowanie nieaktywne."; return; }
+                if(data.status !== "otwarte") {
+                    document.getElementById('msg').innerText = "Głosowanie nieaktywne.";
+                    return;
+                }
 
-                if(data.tryb === "reset") { votedInCurrentRound = false; document.getElementById('msg').innerText = "Zalogowano: " + userFullInfo; }
+                // SZTYWNA KOLEJNOŚĆ
+                let keys = Object.keys(data.wyniki || {});
+                const order = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"];
+                keys.sort((a, b) => order.indexOf(a) - order.indexOf(b));
 
-                Object.keys(data.wyniki || {}).forEach(key => {
+                keys.forEach(key => {
                     const b = document.createElement('button');
                     b.innerText = key;
-                    b.className = "btn " + (key.includes("ZA") ? "btn-za" : key.includes("PRZECIW") ? "btn-przeciw" : "btn-wstrzymuje");
-                    if(votedInCurrentRound) b.disabled = true;
-                    b.onclick = async () => {
-                        const safe = userFullInfo.replace(/[.#$/[\]]/g, ""); 
-                        await updateDoc(docRef, { [`wyniki.${key}`]: increment(1), [`lista_glosow.${safe}`]: key });
-                        votedInCurrentRound = true;
-                    };
+                    b.className = "btn " + (key === "ZA" ? "btn-za" : key === "PRZECIW" ? "btn-przeciw" : "btn-wstrzymuje");
+                    if(juzGlosowal) b.disabled = true;
+                    b.onclick = () => oddajGlos(key, safeName);
                     div.appendChild(b);
                 });
+
+                document.getElementById('msg').innerText = juzGlosowal ? "Twój głos (" + data.lista_glosow[safeName] + ") zapisany." : "Wybierz opcję:";
+            });
+        }
+
+        async function oddajGlos(opcja, safeName) {
+            const freshSnap = await getDoc(docRef);
+            if (freshSnap.data().lista_glosow?.[safeName]) return;
+
+            await updateDoc(docRef, { 
+                [`wyniki.${opcja}`]: increment(1), 
+                [`lista_glosow.${safeName}`]: opcja 
             });
         }
     </script>
