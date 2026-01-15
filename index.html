@@ -62,14 +62,14 @@
             userFullInfo = `${userData.imie} ${userData.nazwisko} (${userData.opis})`;
 
             const voteSnap = await getDoc(docRef);
-            if(voteSnap.data().lista_lock) return alert("Lista zamknięta!");
-            if(voteSnap.data().obecni?.includes(userFullInfo)) return alert("Użytkownik już zalogowany!");
+            if(voteSnap.data().lista_lock) return alert("Lista obecności jest zamknięta!");
+            if(voteSnap.data().obecni?.includes(userFullInfo)) return alert("Użytkownik o tych danych jest już zalogowany!");
 
             await updateDoc(docRef, { obecni: arrayUnion(userFullInfo) });
             document.getElementById('loginArea').style.display = "none";
             document.getElementById('voteArea').style.display = "block";
             
-            // Nasłuchiwanie czy kod dostępu wciąż istnieje
+            // Nasłuchiwanie czy kod dostępu wciąż istnieje w bazie
             onSnapshot(doc(db, "kody_dostepu", userCode), (snap) => {
                 if (!snap.exists()) location.reload(); 
             });
@@ -80,16 +80,20 @@
         function startApp() {
             onSnapshot(docRef, (snap) => {
                 const data = snap.data();
-                if(!data || !data.obecni?.includes(userFullInfo) || data.status === "reset_wszystkich") {
+                if(!data) return;
+
+                // Wylogowanie jeśli Admin zamknął sesję lub usunął radnego z listy
+                if (data.status === "reset_wszystkich" || (data.status !== "logowanie" && !data.obecni?.includes(userFullInfo))) {
                     location.reload();
                     return;
                 }
+
                 document.getElementById('title').innerText = data.tytul;
                 const div = document.getElementById('btns');
                 div.innerHTML = "";
 
-                if(data.status === "zamkniete") {
-                    document.getElementById('msg').innerText = "Głosowanie zakończone.";
+                if(data.status === "zamkniete" || data.status === "logowanie") {
+                    document.getElementById('msg').innerText = data.status === "logowanie" ? "Zalogowano: " + userFullInfo : "Głosowanie zakończone.";
                     return;
                 }
 
@@ -98,22 +102,24 @@
                     document.getElementById('msg').innerText = "Zalogowano: " + userFullInfo;
                 }
 
-                const order = ["ZA", "PRZECIW", "WSTRZYM"];
-                const keys = Object.keys(data.wyniki || {}).sort((a,b) => {
-                    let iA = order.findIndex(l => a.toUpperCase().includes(l));
-                    let iB = order.findIndex(l => b.toUpperCase().includes(l));
-                    return (iA===-1?99:iA) - (iB===-1?99:iB);
-                });
-
+                const keys = Object.keys(data.wyniki || {});
                 keys.forEach(key => {
                     const b = document.createElement('button');
                     b.innerText = key;
-                    let c = key.toUpperCase().includes("ZA") ? "btn-za" : (key.toUpperCase().includes("PRZECIW") ? "btn-przeciw" : (key.toUpperCase().includes("WSTRZYM") ? "btn-wstrzymuje" : "btn-default"));
+                    let c = "btn-default";
+                    if(key.includes("ZA")) c = "btn-za";
+                    else if(key.includes("PRZECIW")) c = "btn-przeciw";
+                    else if(key.includes("WSTRZYM")) c = "btn-wstrzymuje";
                     b.className = "btn " + c;
+
                     if(votedInCurrentRound) b.disabled = true;
+
                     b.onclick = async () => {
                         const safeName = userFullInfo.replace(/[.#$/[\]]/g, ""); 
-                        await updateDoc(docRef, { [`wyniki.${key}`]: increment(1), [`lista_glosow.${safeName}`]: key });
+                        await updateDoc(docRef, { 
+                            [`wyniki.${key}`]: increment(1), 
+                            [`lista_glosow.${safeName}`]: key 
+                        });
                         votedInCurrentRound = true;
                     };
                     div.appendChild(b);
