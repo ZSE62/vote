@@ -2,40 +2,49 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Sesji - Zarządzanie</title>
+    <title>Panel Administratora Sesji</title>
     <style>
-        body { font-family: sans-serif; background: #fdfdfd; display: flex; gap: 20px; padding: 20px; }
-        .box { flex: 1; background: white; padding: 20px; border-radius: 10px; border: 1px solid #ddd; }
-        .obecni-list { list-style: none; padding: 0; }
-        .obecni-list li { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
-        .remove-btn { background: #c0392b; color: white; border: none; padding: 2px 8px; cursor: pointer; border-radius: 3px; }
-        button { width: 100%; padding: 12px; margin: 5px 0; cursor: pointer; font-weight: bold; border-radius: 5px; border: none; }
-        .start { background: #27ae60; color: white; }
-        .stop { background: #d35400; color: white; }
-        .lock { background: #2c3e50; color: white; }
-        .reset-session { background: #7f8c8d; color: white; }
-        input { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
+        body { font-family: sans-serif; background: #fdfdfd; display: flex; gap: 15px; padding: 15px; font-size: 14px; }
+        .box { flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; }
+        h3 { border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 0; }
+        input, button { width: 100%; padding: 10px; margin: 4px 0; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { cursor: pointer; font-weight: bold; background: #3498db; color: white; border: none; }
+        .btn-red { background: #e74c3c; }
+        .btn-green { background: #27ae60; }
+        .small-list { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
+        .small-list li { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #f9f9f9; font-size: 12px; }
+        .del-btn { width: auto; padding: 2px 6px; background: #c0392b; font-size: 10px; }
     </style>
 </head>
 <body>
+
     <div class="box">
-        <h2>Sterowanie Głosowaniem</h2>
+        <h3>Głosowanie</h3>
         <input type="text" id="tytul" placeholder="Temat uchwały">
-        <button class="start" onclick="uruchom()">OTWÓRZ GŁOSOWANIE</button>
-        <button class="stop" onclick="zamknij()">ZAKOŃCZ I ARCHIWIZUJ</button>
-        <hr>
-        <button class="lock" id="lockBtn" onclick="toggleLock()">ZABLOKUJ LISTĘ OBECNOŚCI</button>
-        <button class="reset-session" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ (RAPORT)</button>
+        <button class="btn-green" onclick="uruchom()">START GŁOSOWANIA</button>
+        <button onclick="zamknijGlosowanie()">ZAKOŃCZ GŁOSOWANIE</button>
+        <button style="background:#2c3e50" id="lockBtn" onclick="toggleLock()">ZABLOKUJ LISTĘ</button>
+        <button class="btn-red" style="margin-top:20px" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ & RAPORT</button>
     </div>
 
     <div class="box">
-        <h3>Lista Obecności (<span id="count">0</span>)</h3>
-        <ul id="listaObecnych" class="obecni-list"></ul>
+        <h3>Obecni Radni (<span id="countObecni">0</span>)</h3>
+        <ul id="listaObecnych" class="small-list"></ul>
+    </div>
+
+    <div class="box">
+        <h3>Zarządzanie Kodami</h3>
+        <input type="text" id="newImie" placeholder="Imię">
+        <input type="text" id="newNazwisko" placeholder="Nazwisko">
+        <input type="text" id="newOpis" placeholder="Klasa/Funkcja">
+        <input type="text" id="newKod" placeholder="KOD (np. jan123)">
+        <button class="btn-green" onclick="dodajKod()">DODAJ NOWY KOD</button>
+        <ul id="bazaKodow" class="small-list"></ul>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM",
@@ -49,65 +58,74 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
-        const archiwumRef = collection(db, "archiwum_sesji");
 
-        let isLocked = false;
-
+        // OBSŁUGA OBECNYCH
         onSnapshot(docRef, (snap) => {
             const data = snap.data();
             if(!data) return;
-            
-            const obecni = data.obecni || [];
-            isLocked = data.lista_lock || false;
-            document.getElementById('lockBtn').innerText = isLocked ? "OTWÓRZ LISTĘ OBECNOŚCI" : "ZABLOKUJ LISTĘ OBECNOŚCI";
-            document.getElementById('count').innerText = obecni.length;
-
+            document.getElementById('countObecni').innerText = data.obecni?.length || 0;
+            document.getElementById('lockBtn').innerText = data.lista_lock ? "OTWÓRZ LISTĘ" : "ZABLOKUJ LISTĘ";
             const ul = document.getElementById('listaObecnych');
             ul.innerHTML = "";
-            obecni.forEach(osoba => {
-                const li = document.createElement('li');
-                li.innerHTML = `${osoba} <button class="remove-btn" onclick="usunOsobe('${osoba}')">USUŃ</button>`;
-                ul.appendChild(li);
+            (data.obecni || []).forEach(o => {
+                ul.innerHTML += `<li>${o} <button class="del-btn" onclick="usunObecnego('${o}')">WYRZUĆ</button></li>`;
             });
         });
 
-        window.usunOsobe = async (osoba) => {
+        // OBSŁUGA BAZY KODÓW
+        onSnapshot(collection(db, "kody_dostepu"), (snap) => {
+            const ul = document.getElementById('bazaKodow');
+            ul.innerHTML = "";
+            snap.forEach(d => {
+                const data = d.data();
+                ul.innerHTML += `<li><b>${d.id}</b>: ${data.imie} ${data.nazwisko} <button class="del-btn" onclick="usunKod('${d.id}')">USUŃ</button></li>`;
+            });
+        });
+
+        window.dodajKod = async () => {
+            const kod = document.getElementById('newKod').value.trim();
+            const imie = document.getElementById('newImie').value.trim();
+            const nazwisko = document.getElementById('newNazwisko').value.trim();
+            const opis = document.getElementById('newOpis').value.trim();
+            if(!kod || !imie || !nazwisko) return alert("Wypełnij dane!");
+            await setDoc(doc(db, "kody_dostepu", kod), { imie, nazwisko, opis });
+            alert("Dodano!");
+        };
+
+        window.usunKod = async (id) => { if(confirm("Usunąć kod?")) await deleteDoc(doc(db, "kody_dostepu", id)); };
+
+        window.usunObecnego = async (nazwa) => {
             const snap = await getDoc(docRef);
-            const obecni = snap.data().obecni.filter(o => o !== osoba);
+            const obecni = (snap.data().obecni || []).filter(o => o !== nazwa);
             await updateDoc(docRef, { obecni: obecni });
         };
 
         window.toggleLock = async () => {
-            await updateDoc(docRef, { lista_lock: !isLocked });
+            const snap = await getDoc(docRef);
+            await updateDoc(docRef, { lista_lock: !snap.data().lista_lock });
         };
 
         window.uruchom = async () => {
             const t = document.getElementById('tytul').value || "Głosowanie";
-            await updateDoc(docRef, { 
-                tytul: t, 
-                wyniki: { "ZA": 0, "PRZECIW": 0, "WSTRZYMAŁO SIĘ": 0 }, 
-                lista_glosow: {}, 
-                status: "otwarte",
-                tryb: "reset" 
-            });
+            await updateDoc(docRef, { tytul: t, wyniki: { "ZA": 0, "PRZECIW": 0, "WSTRZYMAŁO SIĘ": 0 }, lista_glosow: {}, status: "otwarte", tryb: "reset" });
         };
 
-        window.zamknij = async () => {
+        window.zamknijGlosowanie = async () => {
             const snap = await getDoc(docRef);
-            const data = snap.data();
             await updateDoc(docRef, { status: "zamkniete" });
-            await setDoc(doc(archiwumRef), { ...data, data_godz: new Date().toLocaleString() });
+            await setDoc(doc(collection(db, "archiwum_sesji")), { ...snap.data(), data_godz: new Date().toLocaleString() });
         };
 
         window.zakonczSesje = async () => {
-            const querySnapshot = await getDocs(archiwumRef);
-            let raport = `RAPORT SESJI\n================\n`;
-            querySnapshot.forEach(docSnap => {
-                const d = docSnap.data();
-                raport += `\nPUNKT: ${d.tytul}\nWYNIKI: ZA ${d.wyniki.ZA}, PRZECIW ${d.wyniki.PRZECIW}\nLISTA: ${JSON.stringify(d.lista_glosow)}\n`;
-            });
-            const blob = new Blob([raport], { type: 'text/plain' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Sesja.txt`; a.click();
+            if(!confirm("Koniec sesji?")) return;
+            const query = await getDocs(collection(db, "archiwum_sesji"));
+            let r = "RAPORT SESJI\n";
+            query.forEach(d => r += `\nUCHWAŁA: ${d.data().tytul}\nZA: ${d.data().wyniki.ZA}, PRZECIW: ${d.data().wyniki.PRZECIW}\n`);
+            const blob = new Blob([r], {type:'text/plain'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Sesja.txt"; a.click();
+            
+            await setDoc(docRef, { obecni: [], lista_lock: false, status: "reset_wszystkich", wyniki: {}, tytul: "Oczekiwanie..." });
+            query.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
         };
     </script>
 </body>
