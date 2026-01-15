@@ -4,50 +4,15 @@
     <meta charset="UTF-8">
     <title>Tablica Wyników</title>
     <style>
-        body { 
-            font-family: "Times New Roman", Times, serif; 
-            background-color: white; 
-            color: black; 
-            margin: 0;
-            padding: 60px;
-            display: flex;
-            justify-content: center;
-        }
-        .monitor {
-            width: 850px;
-            text-align: left;
-        }
-        .header {
-            font-size: 36px;
-            text-align: center;
-            text-transform: uppercase;
-            font-weight: bold;
-            margin-bottom: 60px;
-        }
-        .row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 52px; 
-            font-weight: bold;
-            margin-bottom: 25px;
-            text-transform: uppercase;
-        }
-        .spacer {
-            height: 50px; 
-        }
-        /* Styl dla komunikatu o zamkniętej sesji */
-        .closed-session {
-            font-size: 64px;
-            font-weight: bold;
-            text-align: center;
-            margin-top: 150px;
-            text-transform: uppercase;
-        }
+        body { font-family: "Times New Roman", Times, serif; background: white; color: black; padding: 60px; display: flex; justify-content: center; }
+        .monitor { width: 850px; }
+        .header { font-size: 36px; text-align: center; text-transform: uppercase; font-weight: bold; margin-bottom: 60px; }
+        .row { display: flex; justify-content: space-between; font-size: 52px; font-weight: bold; margin-bottom: 25px; text-transform: uppercase; }
+        .closed { font-size: 64px; font-weight: bold; text-align: center; margin-top: 150px; }
     </style>
 </head>
 <body>
-    <div class="monitor" id="main-container">
-        </div>
+    <div class="monitor" id="main-container"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -67,46 +32,27 @@
         const docRef = doc(db, "ankiet", "vote");
 
         onSnapshot(docRef, (snap) => {
-            const data = snap.data();
-            if(!data) return;
-
+            const data = snap.data(); if(!data) return;
             const container = document.getElementById('main-container');
 
-            // SPRAWDZENIE STATUSU SESJI
             if (data.status === "reset_wszystkich") {
-                container.innerHTML = `<div class="closed-session">SESJA ZAMKNIĘTA</div>`;
+                container.innerHTML = `<div class="closed">SESJA ZAMKNIĘTA</div>`;
                 return;
             }
 
-            // JEŚLI SESJA OTWARTA - WYŚWIETL WYNIKI
             let keys = Object.keys(data.wyniki || {});
-            if (keys.includes("ZA")) {
-                keys = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].filter(k => keys.includes(k));
-            } else {
-                keys.sort();
-            }
+            const order = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"];
+            keys.sort((a, b) => order.indexOf(a) - order.indexOf(b));
 
-            let sumaGlosow = 0;
-            let wynikiHTML = "";
-            keys.forEach(key => {
-                const wartosc = data.wyniki[key];
-                sumaGlosow += wartosc;
-                wynikiHTML += `
-                    <div class="row">
-                        <span>${key}</span>
-                        <span>${wartosc}</span>
-                    </div>
-                `;
-            });
+            let suma = 0;
+            let rowsHTML = "";
+            keys.forEach(k => { suma += data.wyniki[k]; rowsHTML += `<div class="row"><span>${k}</span><span>${data.wyniki[k]}</span></div>`; });
 
             container.innerHTML = `
                 <div class="header">${data.tytul.toUpperCase()}</div>
-                <div class="row">
-                    <span>GŁOSOWAŁO</span>
-                    <span>${sumaGlosow}</span>
-                </div>
-                <div class="spacer"></div>
-                <div id="wyniki-lista">${wynikiHTML}</div>
+                <div class="row"><span>GŁOSOWAŁO</span><span>${suma}</span></div>
+                <div style="height:50px"></div>
+                ${rowsHTML}
             `;
         });
     </script>
