@@ -2,24 +2,52 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Tablica Wyników</title>
+    <title>Wyniki Głosowania</title>
     <style>
-        body { font-family: sans-serif; background: #2c3e50; color: white; text-align: center; padding: 50px; }
-        h1 { font-size: 3.5rem; margin-bottom: 60px; }
-        .results-grid { display: flex; justify-content: center; gap: 60px; }
-        .res-box { padding: 20px; min-width: 200px; border-radius: 10px; background: rgba(255,255,255,0.05); }
-        .label { font-size: 1.8rem; margin-bottom: 20px; font-weight: bold; }
-        .value { font-size: 5rem; font-weight: bold; }
-        .za { color: #2ecc71; }
-        .przeciw { color: #e74c3c; }
-        .wstrzymuje { color: #f1c40f; }
-        .footer { margin-top: 100px; font-size: 1.5rem; opacity: 0.6; }
+        body { 
+            font-family: "Times New Roman", Times, serif; 
+            background-color: white; 
+            color: black; 
+            text-align: center; 
+            padding: 50px; 
+        }
+        h1 { 
+            font-size: 36px; 
+            text-decoration: underline; 
+            margin-bottom: 40px; 
+        }
+        .results-table { 
+            margin: 0 auto; 
+            border-collapse: collapse; 
+            min-width: 300px; 
+        }
+        .results-table td { 
+            padding: 10px 20px; 
+            font-size: 28px; 
+            border: 1px solid black; 
+        }
+        .label { 
+            text-align: left; 
+            font-weight: bold; 
+        }
+        .count { 
+            text-align: right; 
+        }
+        #stats { 
+            margin-top: 30px; 
+            font-size: 20px; 
+        }
     </style>
 </head>
 <body>
-    <h1 id="title">Oczekiwanie na głosowanie...</h1>
-    <div class="results-grid" id="grid"></div>
-    <div class="footer" id="stats">Obecnych: 0 | Głosowało: 0</div>
+    <h1 id="tytul">Oczekiwanie na rozpoczęcie głosowania...</h1>
+    
+    <table class="results-table">
+        <tbody id="wyniki-lista">
+            </tbody>
+    </table>
+
+    <div id="stats">Obecnych: 0 | Głosowało: 0</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -39,32 +67,37 @@
         const docRef = doc(db, "ankiet", "vote");
 
         onSnapshot(docRef, (snap) => {
-            const data = snap.data(); if(!data) return;
-            document.getElementById('title').innerText = data.tytul;
-            
+            const data = snap.data();
+            if(!data) return;
+
+            document.getElementById('tytul').innerText = data.tytul;
+            const lista = document.getElementById('wyniki-lista');
+            lista.innerHTML = "";
+
+            // 1. Ustalanie kluczy i sztywnej kolejności
             let keys = Object.keys(data.wyniki || {});
-            if (keys.includes("ZA")) keys = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].filter(k => keys.includes(k));
-            else keys.sort();
+            
+            if (keys.includes("ZA")) {
+                // Kolejność wymuszona przez Ciebie: ZA -> PRZECIW -> WSTRZYMAŁO SIĘ
+                keys = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].filter(k => keys.includes(k));
+            } else {
+                keys.sort(); // Dla list własnych (np. nazwiska) sortowanie alfabetyczne
+            }
 
-            const grid = document.getElementById('grid');
-            grid.innerHTML = "";
-            let total = 0;
-
+            let sumaGlosow = 0;
             keys.forEach(key => {
-                const val = data.wyniki[key];
-                total += val;
-                let c = "za";
-                if(key === "PRZECIW") c = "przeciw";
-                if(key === "WSTRZYMAŁO SIĘ") c = "wstrzymuje";
+                const wartosc = data.wyniki[key];
+                sumaGlosow += wartosc;
 
-                grid.innerHTML += `
-                    <div class="res-box">
-                        <div class="label">${key}</div>
-                        <div class="value ${c}">${val}</div>
-                    </div>
+                lista.innerHTML += `
+                    <tr>
+                        <td class="label">${key}:</td>
+                        <td class="count">${wartosc}</td>
+                    </tr>
                 `;
             });
-            document.getElementById('stats').innerText = `Obecnych: ${data.obecni?.length || 0} | Głosowało: ${total}`;
+
+            document.getElementById('stats').innerText = `Obecnych: ${data.obecni?.length || 0} | Głosowało: ${sumaGlosow}`;
         });
     </script>
 </body>
