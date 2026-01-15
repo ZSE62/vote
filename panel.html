@@ -15,45 +15,40 @@
         .small-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
         .small-list li { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #f9f9f9; font-size: 12px; }
         .del-btn { width: auto; padding: 2px 8px; background: #c0392b; font-size: 10px; margin: 0; }
-        label { font-weight: bold; display: block; margin-top: 10px; color: #666; }
     </style>
 </head>
 <body>
 
     <div class="box">
         <h3>Głosowanie</h3>
-        <input type="text" id="tytul" placeholder="Temat uchwały / punkt obrad">
-        
-        <label>Tryb wyboru przycisków:</label>
+        <input type="text" id="tytul" placeholder="Temat uchwały">
+        <label>Tryb:</label>
         <select id="tryb" onchange="document.getElementById('opcjeDiv').style.display = this.value=='osoby'?'block':'none'">
             <option value="tak_nie">ZA / PRZECIW / WSTRZYMAŁO SIĘ</option>
-            <option value="osoby">LISTA WŁASNA (np. kandydaci)</option>
+            <option value="osoby">LISTA WŁASNA (np. nazwiska)</option>
         </select>
-        
         <div id="opcjeDiv" style="display:none;">
-            <input type="text" id="listaOsob" placeholder="Opcja 1, Opcja 2, Opcja 3... (po przecinku)">
+            <input type="text" id="listaOsob" placeholder="Opcja 1, Opcja 2 (po przecinku)">
         </div>
-
         <button class="btn-green" onclick="uruchom()">START GŁOSOWANIA</button>
         <button onclick="zamknijGlosowanie()">ZAKOŃCZ GŁOSOWANIE</button>
-        <button style="background:#2c3e50" id="lockBtn" onclick="toggleLock()">ZABLOKUJ LISTĘ OBECNOŚCI</button>
-        
-        <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
-        <button class="btn-red" onclick="zakonczSesje()">ZAKOŃCZ CAŁĄ SESJĘ & RAPORT</button>
+        <button style="background:#2c3e50" id="lockBtn" onclick="toggleLock()">ZABLOKUJ LISTĘ</button>
+        <hr>
+        <button class="btn-red" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ & RAPORT</button>
     </div>
 
     <div class="box">
-        <h3>Obecni Radni (<span id="countObecni">0</span>)</h3>
+        <h3>Obecni (<span id="countObecni">0</span>)</h3>
         <ul id="listaObecnych" class="small-list"></ul>
     </div>
 
     <div class="box">
-        <h3>Zarządzanie Radnymi</h3>
+        <h3>Baza Radnych</h3>
         <input type="text" id="newImie" placeholder="Imię">
         <input type="text" id="newNazwisko" placeholder="Nazwisko">
-        <input type="text" id="newOpis" placeholder="Klasa / Funkcja / Opis">
-        <input type="text" id="newKod" placeholder="UNIKALNY KOD (np. marek44)">
-        <button class="btn-green" onclick="dodajKod()">DODAJ RADNEGO DO BAZY</button>
+        <input type="text" id="newOpis" placeholder="Opis/Klasa">
+        <input type="text" id="newKod" placeholder="KOD">
+        <button class="btn-green" onclick="dodajKod()">DODAJ KOD</button>
         <ul id="bazaKodow" class="small-list"></ul>
     </div>
 
@@ -74,7 +69,6 @@
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
-        // Monitoring obecnych
         onSnapshot(docRef, (snap) => {
             const data = snap.data();
             if(!data) return;
@@ -83,21 +77,15 @@
             const ul = document.getElementById('listaObecnych');
             ul.innerHTML = "";
             (data.obecni || []).forEach(o => {
-                const li = document.createElement('li');
-                li.innerHTML = `${o} <button class="del-btn" onclick="usunObecnego('${o}')">WYRZUĆ</button>`;
-                ul.appendChild(li);
+                ul.innerHTML += `<li>${o} <button class="del-btn" onclick="usunObecnego('${o}')">WYRZUĆ</button></li>`;
             });
         });
 
-        // Monitoring bazy kodów
         onSnapshot(collection(db, "kody_dostepu"), (snap) => {
             const ul = document.getElementById('bazaKodow');
             ul.innerHTML = "";
             snap.forEach(d => {
-                const data = d.data();
-                const li = document.createElement('li');
-                li.innerHTML = `<span><b>${d.id}</b>: ${data.imie} ${data.nazwisko}</span> <button class="del-btn" onclick="usunKod('${d.id}')">USUŃ</button>`;
-                ul.appendChild(li);
+                ul.innerHTML += `<li><b>${d.id}</b>: ${d.data().imie} ${d.data().nazwisko} <button class="del-btn" onclick="usunKod('${d.id}')">USUŃ</button></li>`;
             });
         });
 
@@ -106,33 +94,22 @@
             const imie = document.getElementById('newImie').value.trim();
             const nazwisko = document.getElementById('newNazwisko').value.trim();
             const opis = document.getElementById('newOpis').value.trim();
-            
-            if(!kod || !imie || !nazwisko) return alert("Wypełnij wymagane pola (Kod, Imię, Nazwisko)!");
-            
+            if(!kod || !imie || !nazwisko) return alert("Brak danych!");
             await setDoc(doc(db, "kody_dostepu", kod), { imie, nazwisko, opis });
-            
-            // Automatyczne czyszczenie pól
-            document.getElementById('newKod').value = "";
-            document.getElementById('newImie').value = "";
-            document.getElementById('newNazwisko').value = "";
-            document.getElementById('newOpis').value = "";
+            document.getElementById('newKod').value = ""; document.getElementById('newImie').value = ""; document.getElementById('newNazwisko').value = ""; document.getElementById('newOpis').value = "";
         };
 
-        window.usunKod = async (id) => { 
-            if(confirm("Czy na pewno usunąć kod? Radny zostanie natychmiast wylogowany i usunięty z listy obecności.")) {
-                const codeSnap = await getDoc(doc(db, "kody_dostepu", id));
-                if (codeSnap.exists()) {
-                    const d = codeSnap.data();
-                    const nazwaFull = `${d.imie} ${d.nazwisko} (${d.opis})`;
-                    
-                    // Usuwamy go z listy obecnych w vote
-                    const voteSnap = await getDoc(docRef);
-                    const nowiObecni = (voteSnap.data().obecni || []).filter(o => o !== nazwaFull);
-                    await updateDoc(docRef, { obecni: nowiObecni });
-                }
-                // Usuwamy dokument kodu
-                await deleteDoc(doc(db, "kody_dostepu", id));
-            } 
+        window.usunKod = async (id) => {
+            if(!confirm("Usunąć kod i wylogować radnego?")) return;
+            const codeSnap = await getDoc(doc(db, "kody_dostepu", id));
+            if (codeSnap.exists()) {
+                const d = codeSnap.data();
+                const nazwaFull = `${d.imie} ${d.nazwisko} (${d.opis})`;
+                const voteSnap = await getDoc(docRef);
+                const nowiObecni = (voteSnap.data().obecni || []).filter(o => o !== nazwaFull);
+                await updateDoc(docRef, { obecni: nowiObecni });
+            }
+            await deleteDoc(doc(db, "kody_dostepu", id));
         };
 
         window.usunObecnego = async (nazwa) => {
@@ -150,47 +127,30 @@
             const t = document.getElementById('tytul').value || "Głosowanie";
             const tryb = document.getElementById('tryb').value;
             let w = {};
-            
             if(tryb === 'tak_nie') {
                 w = { "ZA": 0, "PRZECIW": 0, "WSTRZYMAŁO SIĘ": 0 };
             } else {
-                const lista = document.getElementById('listaOsob').value.split(',');
-                lista.forEach(o => { if(o.trim()) w[o.trim().toUpperCase()] = 0; });
-                if(Object.keys(w).length === 0) return alert("Wpisz opcje do głosowania po przecinku!");
+                document.getElementById('listaOsob').value.split(',').forEach(o => { if(o.trim()) w[o.trim().toUpperCase()] = 0; });
             }
-
-            await updateDoc(docRef, { 
-                tytul: t, 
-                wyniki: w, 
-                lista_glosow: {}, 
-                status: "otwarte", 
-                tryb: "reset" 
-            });
-            alert("Głosowanie gotowe!");
+            await updateDoc(docRef, { tytul: t, wyniki: w, lista_glosow: {}, status: "otwarte", tryb: "reset" });
         };
 
         window.zamknijGlosowanie = async () => {
             const snap = await getDoc(docRef);
             await updateDoc(docRef, { status: "zamkniete" });
             await setDoc(doc(collection(db, "archiwum_sesji")), { ...snap.data(), data_godz: new Date().toLocaleString() });
-            alert("Głosowanie zakończone i zapisane.");
         };
 
         window.zakonczSesje = async () => {
-            if(!confirm("Czy zakończyć sesję? Pobrany zostanie raport, a wszyscy radni zostaną wylogowani.")) return;
-            
+            if(!confirm("Zakończyć sesję?")) return;
             const query = await getDocs(collection(db, "archiwum_sesji"));
-            let r = "PROTOKÓŁ SESJI\n====================\n";
-            query.forEach(d => {
-                const data = d.data();
-                r += `\nUCHWAŁA: ${data.tytul}\nDATA: ${data.data_godz}\nWYNIKI: ${JSON.stringify(data.wyniki)}\nLISTA IMIENNA: ${JSON.stringify(data.lista_glosow)}\n--------------------\n`;
-            });
-            
+            let r = "PROTOKÓŁ\n";
+            query.forEach(d => r += `\nUCHWAŁA: ${d.data().tytul}\nWYNIKI: ${JSON.stringify(d.data().wyniki)}\n`);
             const blob = new Blob([r], {type:'text/plain'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Protokol_Sesji.txt"; a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Sesja.txt"; a.click();
             
-            // Czyścimy wszystko i wylogowujemy
-            await setDoc(docRef, { obecni: [], lista_lock: false, status: "reset_wszystkich", wyniki: {}, tytul: "Brak aktywnego głosowania" });
+            // RESET SESJI DO STANU LOGOWANIA
+            await setDoc(docRef, { obecni: [], lista_lock: false, status: "logowanie", wyniki: {}, tytul: "Oczekiwanie" });
             query.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
         };
     </script>
