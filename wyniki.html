@@ -6,46 +6,27 @@
     <style>
         body { 
             font-family: "Times New Roman", Times, serif; 
-            background-color: white; 
-            color: black; 
             text-align: center; 
-            padding: 50px; 
+            padding-top: 50px; 
         }
         h1 { 
-            font-size: 36px; 
-            text-decoration: underline; 
-            margin-bottom: 40px; 
+            font-size: 40px; 
         }
-        .results-table { 
-            margin: 0 auto; 
-            border-collapse: collapse; 
-            min-width: 300px; 
-        }
-        .results-table td { 
-            padding: 10px 20px; 
-            font-size: 28px; 
-            border: 1px solid black; 
-        }
-        .label { 
-            text-align: left; 
-            font-weight: bold; 
-        }
-        .count { 
-            text-align: right; 
+        .wynik-blok { 
+            font-size: 30px; 
+            margin: 10px; 
         }
         #stats { 
-            margin-top: 30px; 
+            margin-top: 50px; 
             font-size: 20px; 
         }
     </style>
 </head>
 <body>
-    <h1 id="tytul">Oczekiwanie na rozpoczęcie głosowania...</h1>
+    <h1 id="tytul">Oczekiwanie na głosowanie...</h1>
     
-    <table class="results-table">
-        <tbody id="wyniki-lista">
-            </tbody>
-    </table>
+    <div id="wyniki-lista">
+        </div>
 
     <div id="stats">Obecnych: 0 | Głosowało: 0</div>
 
@@ -74,14 +55,12 @@
             const lista = document.getElementById('wyniki-lista');
             lista.innerHTML = "";
 
-            // 1. Ustalanie kluczy i sztywnej kolejności
+            // LOGIKA KOLEJNOŚCI
             let keys = Object.keys(data.wyniki || {});
-            
             if (keys.includes("ZA")) {
-                // Kolejność wymuszona przez Ciebie: ZA -> PRZECIW -> WSTRZYMAŁO SIĘ
                 keys = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].filter(k => keys.includes(k));
             } else {
-                keys.sort(); // Dla list własnych (np. nazwiska) sortowanie alfabetyczne
+                keys.sort();
             }
 
             let sumaGlosow = 0;
@@ -89,11 +68,11 @@
                 const wartosc = data.wyniki[key];
                 sumaGlosow += wartosc;
 
+                // WYGLĄD JAK WCZEŚNIEJ (Prosty tekst)
                 lista.innerHTML += `
-                    <tr>
-                        <td class="label">${key}:</td>
-                        <td class="count">${wartosc}</td>
-                    </tr>
+                    <div class="wynik-blok">
+                        ${key}: ${wartosc}
+                    </div>
                 `;
             });
 
