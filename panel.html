@@ -104,7 +104,7 @@
 
         onSnapshot(collection(db, "kody_dostepu"), (s) => {
             const ul = document.getElementById('lB'); ul.innerHTML = "";
-            s.forEach(d => { ul.innerHTML += `<li><span><span class="radny-code">${d.id}</span><span class="radny-name">${d.data().nazwisko}</span></span> <button class="del-mini" onclick="usunK('${d.id}')">USUŃ</button></li>`; });
+            s.forEach(d => { ul.innerHTML += `<li><span><span class="radny-code">${d.id}</span><span class="radny-name">${d.data().nazwisko}</span></span> <button class="del-mini" onclick="usunK('${d.id}')">X</button></li>`; });
         });
 
         onSnapshot(collection(db, "archiwum_sesji"), (s) => {
@@ -169,4 +169,5 @@
     </script>
 </body>
 </html>
+
 
