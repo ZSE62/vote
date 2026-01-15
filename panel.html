@@ -9,15 +9,40 @@
         .sidebar { width: 350px; background: white; border-right: 1px solid #ddd; padding: 20px; display: flex; flex-direction: column; }
         .main { flex: 1; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow-y: auto; }
+        
         button { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        input, select { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; }
+        input, select { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        
         .btn-vote { background: var(--success); color: white; height: 50px; }
         .btn-stop { background: var(--danger); color: white; }
         .status { padding: 10px; text-align: center; border-radius: 5px; margin-bottom: 10px; font-weight: bold; background: #eee; }
         .active { background: #d4edda; color: #155724; }
-        .small-list { list-style: none; padding: 0; font-size: 13px; }
-        .small-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .del { color: white; cursor: pointer; border: none; background: var(--danger); font-size: 10px; padding: 4px 8px; border-radius: 3px; }
+
+        /* Estetyczna lista radnych */
+        .small-list { list-style: none; padding: 0; margin: 0; }
+        .small-list li { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 10px; 
+            border-bottom: 1px solid #f0f0f0; 
+            font-size: 14px;
+        }
+        .radny-info { flex-grow: 1; margin-right: 10px; }
+        .radny-info b { color: var(--primary); margin-right: 8px; }
+        
+        /* Mały przycisk usuń */
+        .del-mini { 
+            width: auto; 
+            padding: 5px 10px; 
+            margin: 0; 
+            background: #ffeded; 
+            color: var(--danger); 
+            border: 1px solid var(--danger); 
+            font-size: 11px;
+            border-radius: 4px;
+        }
+        .del-mini:hover { background: var(--danger); color: white; }
     </style>
 </head>
 <body>
@@ -41,13 +66,15 @@
 
     <div class="main">
         <div class="card">
-            <h3>Obecni (<span id="c">0</span>) <button onclick="toggleL()" id="lBtn" style="width:auto; float:right; font-size:10px; padding: 5px;">ZABLOKUJ</button></h3>
+            <h3>Obecni (<span id="c">0</span>) <button onclick="toggleL()" id="lBtn" style="width:auto; float:right; padding:5px; font-size:10px">ZABLOKUJ</button></h3>
             <ul id="lO" class="small-list"></ul>
         </div>
         <div class="card">
             <h3>Baza Radnych</h3>
-            <input type="text" id="nK" placeholder="Kod dostępu">
-            <input type="text" id="nN" placeholder="Nazwisko i Imię">
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="nK" placeholder="Kod" style="flex: 1;">
+                <input type="text" id="nN" placeholder="Nazwisko i Imię" style="flex: 2;">
+            </div>
             <button style="background:var(--dark); color:white" onclick="dodajK()">DODAJ RADNEGO</button>
             <hr>
             <ul id="lB" class="small-list"></ul>
@@ -87,12 +114,16 @@
             document.getElementById('c').innerText = data.obecni?.length || 0;
             document.getElementById('lBtn').innerText = data.lista_lock ? "ODBLOKUJ" : "ZABLOKUJ";
             const ul = document.getElementById('lO'); ul.innerHTML = "";
-            (data.obecni || []).forEach(o => { ul.innerHTML += `<li>${o} <button class="del" onclick="usunO('${o}')">WYRZUĆ</button></li>`; });
+            (data.obecni || []).forEach(o => { 
+                ul.innerHTML += `<li>${o} <button class="del-mini" onclick="usunO('${o}')">WYRZUĆ</button></li>`; 
+            });
         });
 
         onSnapshot(collection(db, "kody_dostepu"), (s) => {
             const ul = document.getElementById('lB'); ul.innerHTML = "";
-            s.forEach(d => { ul.innerHTML += `<li><span><b>${d.id}</b>: ${d.data().nazwisko}</span> <button class="del" onclick="usunK('${d.id}')">USUŃ</button></li>`; });
+            s.forEach(d => { 
+                ul.innerHTML += `<li><div class="radny-info"><b>${d.id}</b> ${d.data().nazwisko}</div> <button class="del-mini" onclick="usunK('${d.id}')">USUŃ</button></li>`; 
+            });
         });
 
         window.otworzSesje = async () => { await updateDoc(docRef, { status: "logowanie", obecni: [], lista_lock: false, tytul: "Oczekiwanie" }); };
@@ -117,7 +148,6 @@
         };
 
         window.usunK = async (kodId) => {
-            if(!confirm("Usunąć kod i wylogować radnego?")) return;
             const codeSnap = await getDoc(doc(db, "kody_dostepu", kodId));
             if(codeSnap.exists()) {
                 const nazwisko = codeSnap.data().nazwisko;
@@ -134,15 +164,14 @@
         window.zakonczSesje = async () => {
             if(!confirm("Pobrać raport i zakończyć dzień?")) return;
             const q = await getDocs(collection(db, "archiwum_sesji"));
-            let r = "PEŁNY RAPORT SESJI\n==================\n";
+            let r = "RAPORT SESJI\n";
             q.forEach(d => {
                 const data = d.data();
-                r += `\nUCHWAŁA: ${data.tytul}\nCZAS: ${data.czas}\nWYNIKI: ${JSON.stringify(data.wyniki)}\nLISTA IMIENNA:\n`;
+                r += `\nUCHWAŁA: ${data.tytul}\nWYNIKI: ${JSON.stringify(data.wyniki)}\nLISTA GŁOSÓW:\n`;
                 Object.entries(data.lista_glosow || {}).forEach(([k,v]) => r += `- ${k}: ${v}\n`);
-                r += "------------------\n";
             });
             const blob = new Blob([r], {type:'text/plain'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Raport_Dnia.txt"; a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Raport.txt"; a.click();
             await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], lista_lock: false });
             q.forEach(async (d) => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
         };
