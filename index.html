@@ -14,18 +14,18 @@
         .btn-przeciw { background: #c0392b; }
         .btn-wstrzymuje { background: #f1c40f; color: #000; }
         .btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        #msg { margin-top: 20px; font-weight: bold; color: #d35400; }
+        #msg { margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="loginArea" class="login-box">
         <h3>Logowanie do Sesji</h3>
-        <input type="text" id="accessCode" placeholder="Wpisz swój kod dostępu">
+        <input type="text" id="accessCode" placeholder="Kod dostępu">
         <button class="btn-login" onclick="zaloguj()">WEJDŹ</button>
     </div>
 
     <div id="voteArea" style="display:none;">
-        <h2 id="title">System Głosowania</h2>
+        <h2 id="title">Oczekiwanie...</h2>
         <div id="btns"></div>
         <p id="msg"></p>
     </div>
@@ -48,78 +48,48 @@
         const docRef = doc(db, "ankiet", "vote");
 
         let userFullInfo = null;
-        let userCode = null;
         let votedInCurrentRound = false;
 
         window.zaloguj = async () => {
-            userCode = document.getElementById('accessCode').value.trim();
-            if(!userCode) return;
+            const code = document.getElementById('accessCode').value.trim();
+            const vSnap = await getDoc(docRef);
+            if(vSnap.data().status === "reset_wszystkich") return alert("Sesja nie jest jeszcze otwarta!");
 
-            const codeSnap = await getDoc(doc(db, "kody_dostepu", userCode));
-            if(!codeSnap.exists()) return alert("Błędny kod!");
+            const cSnap = await getDoc(doc(db, "kody_dostepu", code));
+            if(!cSnap.exists()) return alert("Zły kod!");
 
-            const userData = codeSnap.data();
-            userFullInfo = `${userData.imie} ${userData.nazwisko} (${userData.opis})`;
-
-            const voteSnap = await getDoc(docRef);
-            if(voteSnap.data().lista_lock) return alert("Lista obecności jest zamknięta!");
-            if(voteSnap.data().obecni?.includes(userFullInfo)) return alert("Użytkownik o tych danych jest już zalogowany!");
+            userFullInfo = cSnap.data().nazwisko;
+            if(vSnap.data().lista_lock) return alert("Lista zamknięta!");
+            if(vSnap.data().obecni?.includes(userFullInfo)) return alert("Już zalogowano!");
 
             await updateDoc(docRef, { obecni: arrayUnion(userFullInfo) });
             document.getElementById('loginArea').style.display = "none";
             document.getElementById('voteArea').style.display = "block";
             
-            // Nasłuchiwanie czy kod dostępu wciąż istnieje w bazie
-            onSnapshot(doc(db, "kody_dostepu", userCode), (snap) => {
-                if (!snap.exists()) location.reload(); 
-            });
-
+            onSnapshot(doc(db, "kody_dostepu", code), (s) => { if(!s.exists()) location.reload(); });
             startApp();
         };
 
         function startApp() {
             onSnapshot(docRef, (snap) => {
                 const data = snap.data();
-                if(!data) return;
-
-                // Wylogowanie jeśli Admin zamknął sesję lub usunął radnego z listy
-                if (data.status === "reset_wszystkich" || (data.status !== "logowanie" && !data.obecni?.includes(userFullInfo))) {
-                    location.reload();
-                    return;
-                }
+                if(!data || data.status === "reset_wszystkich" || !data.obecni?.includes(userFullInfo)) { location.reload(); return; }
 
                 document.getElementById('title').innerText = data.tytul;
-                const div = document.getElementById('btns');
-                div.innerHTML = "";
+                const div = document.getElementById('btns'); div.innerHTML = "";
 
-                if(data.status === "zamkniete" || data.status === "logowanie") {
-                    document.getElementById('msg').innerText = data.status === "logowanie" ? "Zalogowano: " + userFullInfo : "Głosowanie zakończone.";
-                    return;
-                }
+                if(data.status !== "otwarte") { document.getElementById('msg').innerText = "Głosowanie nieaktywne."; return; }
 
-                if(data.tryb === "reset") {
-                    votedInCurrentRound = false;
-                    document.getElementById('msg').innerText = "Zalogowano: " + userFullInfo;
-                }
+                if(data.tryb === "reset") { votedInCurrentRound = false; document.getElementById('msg').innerText = "Zalogowano: " + userFullInfo; }
 
-                const keys = Object.keys(data.wyniki || {});
-                keys.forEach(key => {
+                Object.keys(data.wyniki || {}).forEach(key => {
                     const b = document.createElement('button');
                     b.innerText = key;
-                    let c = "btn-default";
-                    if(key.includes("ZA")) c = "btn-za";
-                    else if(key.includes("PRZECIW")) c = "btn-przeciw";
-                    else if(key.includes("WSTRZYM")) c = "btn-wstrzymuje";
-                    b.className = "btn " + c;
-
+                    b.className = "btn " + (key.includes("ZA") ? "btn-za" : key.includes("PRZECIW") ? "btn-przeciw" : "btn-wstrzymuje");
                     if(votedInCurrentRound) b.disabled = true;
-
                     b.onclick = async () => {
-                        const safeName = userFullInfo.replace(/[.#$/[\]]/g, ""); 
-                        await updateDoc(docRef, { 
-                            [`wyniki.${key}`]: increment(1), 
-                            [`lista_glosow.${safeName}`]: key 
-                        });
+                        const safe = userFullInfo.replace(/[.#$/[\]]/g, ""); 
+                        await updateDoc(docRef, { [`wyniki.${key}`]: increment(1), [`lista_glosow.${safe}`]: key });
                         votedInCurrentRound = true;
                     };
                     div.appendChild(b);
