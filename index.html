@@ -5,27 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terminal Radnego</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #fdfdfd; padding: 20px; }
-        .login-box { max-width: 350px; margin: 80px auto; padding: 30px; background: white; border: 1px solid #ddd; border-radius: 12px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .btn-login { background: #2980b9; color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 5px; }
-        .btn { display: block; width: 100%; max-width: 400px; padding: 25px; margin: 15px auto; font-size: 1.4rem; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; }
+        body { font-family: sans-serif; text-align: center; background: #fdfdfd; padding: 20px; margin: 0; }
+        .login-box { max-width: 350px; margin: 80px auto; padding: 30px; background: white; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        .btn-login { background: #2980b9; color: white; border: none; width: 100%; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 5px; font-size: 16px; }
+        
+        .btn { display: block; width: 100%; max-width: 400px; padding: 25px; margin: 15px auto; font-size: 1.4rem; border: none; border-radius: 8px; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; }
         .btn-za { background: #27ae60; }
         .btn-przeciw { background: #c0392b; }
         .btn-wstrzymuje { background: #f1c40f; color: #000; }
-        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        #msg { margin-top: 20px; font-weight: bold; }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: scale(0.98); }
+        
+        #msg { margin-top: 20px; font-weight: bold; font-size: 18px; color: #333; }
+        #title { color: #2c3e50; margin-bottom: 30px; }
     </style>
 </head>
 <body>
     <div id="loginArea" class="login-box">
-        <h3>Logowanie</h3>
+        <h3>System Głosowania</h3>
+        <p style="font-size: 14px; color: #666;">Wprowadź swój indywidualny kod</p>
         <input type="text" id="accessCode" placeholder="Kod dostępu">
-        <button class="btn-login" onclick="zaloguj()">WEJDŹ</button>
+        <button class="btn-login" onclick="zaloguj()">ZALOGUJ SIĘ</button>
     </div>
 
     <div id="voteArea" style="display:none;">
-        <h2 id="title">Czekaj...</h2>
+        <h2 id="title">Oczekiwanie...</h2>
         <div id="btns"></div>
         <p id="msg"></p>
     </div>
@@ -50,15 +54,28 @@
         let userFullInfo = null;
 
         window.zaloguj = async () => {
-            const code = document.getElementById('accessCode').value.trim();
+            const codeInput = document.getElementById('accessCode');
+            const code = codeInput.value.trim();
+            if(!code) return;
+
             const cSnap = await getDoc(doc(db, "kody_dostepu", code));
-            if(!cSnap.exists()) return alert("Błędny kod!");
+            if(!cSnap.exists()) return alert("Błędny kod dostępu!");
+
+            // SPRAWDZENIE BLOKADY LISTY
+            const vSnap = await getDoc(docRef);
+            if(vSnap.data().lista_lock) {
+                return alert("Lista obecności jest obecnie zablokowana. Nie można się dopisać.");
+            }
 
             userFullInfo = cSnap.data().nazwisko;
-            const vSnap = await getDoc(docRef);
-            if(vSnap.data().obecni?.includes(userFullInfo)) return alert("Już zalogowano!");
+            
+            // Sprawdzenie czy już zalogowany
+            if(vSnap.data().obecni?.includes(userFullInfo)) {
+                return alert("Użytkownik o tym nazwisku jest już zalogowany.");
+            }
 
             await updateDoc(docRef, { obecni: arrayUnion(userFullInfo) });
+            
             document.getElementById('loginArea').style.display = "none";
             document.getElementById('voteArea').style.display = "block";
             startApp();
@@ -67,40 +84,68 @@
         function startApp() {
             onSnapshot(docRef, (snap) => {
                 const data = snap.data();
-                if(!data || data.status === "reset_wszystkich" || !data.obecni?.includes(userFullInfo)) { location.reload(); return; }
+                if(!data) return;
+
+                // Jeśli sesja została zamknięta przez admina (reset), wyloguj radnego
+                if(data.status === "reset_wszystkich") {
+                    location.reload();
+                    return;
+                }
 
                 const safeName = userFullInfo.replace(/[.#$/[\]]/g, "");
                 const juzGlosowal = data.lista_glosow && data.lista_glosow[safeName];
 
                 document.getElementById('title').innerText = data.tytul;
-                const div = document.getElementById('btns'); div.innerHTML = "";
+                const div = document.getElementById('btns'); 
+                div.innerHTML = "";
 
                 if(data.status !== "otwarte") {
-                    document.getElementById('msg').innerText = "Głosowanie nieaktywne.";
+                    document.getElementById('msg').innerText = "Oczekiwanie na rozpoczęcie głosowania...";
                     return;
                 }
 
-                // SZTYWNA KOLEJNOŚĆ
+                // Sztywna kolejność: ZA, PRZECIW, WSTRZYMAŁO SIĘ
                 let keys = Object.keys(data.wyniki || {});
                 const order = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"];
-                keys.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+                keys.sort((a, b) => {
+                    let indexA = order.indexOf(a);
+                    let indexB = order.indexOf(b);
+                    if (indexA === -1) indexA = 99;
+                    if (indexB === -1) indexB = 99;
+                    return indexA - indexB;
+                });
 
                 keys.forEach(key => {
                     const b = document.createElement('button');
                     b.innerText = key;
-                    b.className = "btn " + (key === "ZA" ? "btn-za" : key === "PRZECIW" ? "btn-przeciw" : "btn-wstrzymuje");
+                    
+                    // Kolory przycisków
+                    let colorClass = "btn-wstrzymuje";
+                    if(key === "ZA") colorClass = "btn-za";
+                    if(key === "PRZECIW") colorClass = "btn-przeciw";
+                    
+                    b.className = "btn " + colorClass;
+                    
+                    // Blokada jeśli już oddano głos
                     if(juzGlosowal) b.disabled = true;
+
                     b.onclick = () => oddajGlos(key, safeName);
                     div.appendChild(b);
                 });
 
-                document.getElementById('msg').innerText = juzGlosowal ? "Twój głos (" + data.lista_glosow[safeName] + ") zapisany." : "Wybierz opcję:";
+                document.getElementById('msg').innerText = juzGlosowal 
+                    ? "Twój głos (" + data.lista_glosow[safeName] + ") został zarejestrowany." 
+                    : "Proszę oddać głos:";
             });
         }
 
         async function oddajGlos(opcja, safeName) {
+            // Ponowna weryfikacja czy głos już nie istnieje w bazie (zabezpieczenie)
             const freshSnap = await getDoc(docRef);
-            if (freshSnap.data().lista_glosow?.[safeName]) return;
+            if (freshSnap.data().lista_glosow && freshSnap.data().lista_glosow[safeName]) {
+                alert("Głos został już oddany wcześniej.");
+                return;
+            }
 
             await updateDoc(docRef, { 
                 [`wyniki.${opcja}`]: increment(1), 
