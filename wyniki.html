@@ -4,16 +4,15 @@
     <meta charset="UTF-8">
     <title>system @mperek</title>
     <style>
-        body { font-family: 'Georgia', serif; background: #fff; color: #000; padding: 50px; text-align: center; }
-        .container { max-width: 1000px; margin: 0 auto; border: 5px double #000; padding: 40px; }
-        .title { font-size: 42px; font-weight: bold; text-transform: uppercase; margin-bottom: 40px; border-bottom: 3px solid #000; padding-bottom: 20px; }
-        .row { display: flex; justify-content: space-between; font-size: 55px; font-weight: bold; margin: 15px 0; border-bottom: 1px dashed #ccc; }
-        .msg { font-size: 50px; margin-top: 100px; font-style: italic; color: #444; }
-        .footer { margin-top: 50px; font-size: 18px; color: #888; border-top: 1px solid #eee; padding-top: 10px; }
+        body { font-family: "Times New Roman", Times, serif; background: white; color: black; padding: 60px; display: flex; justify-content: center; }
+        .monitor { width: 850px; }
+        .header { font-size: 36px; text-align: center; text-transform: uppercase; font-weight: bold; margin-bottom: 60px; }
+        .row { display: flex; justify-content: space-between; font-size: 52px; font-weight: bold; margin-bottom: 25px; text-transform: uppercase; }
+        .msg { font-size: 48px; text-align: center; margin-top: 100px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="container" id="view"></div>
+    <div class="monitor" id="main-container"></div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
@@ -22,6 +21,8 @@
             apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM",
             authDomain: "votelive-f469d.firebaseapp.com",
             projectId: "votelive-f469d",
+            storageBucket: "votelive-f469d.firebasestorage.app",
+            messagingSenderId: "959356764271",
             appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" 
         };
 
@@ -31,32 +32,33 @@
 
         onSnapshot(docRef, (snap) => {
             const data = snap.data(); if(!data) return;
-            const view = document.getElementById('view');
+            const container = document.getElementById('main-container');
 
             if (data.status === "reset_wszystkich") {
-                view.innerHTML = `<div class="msg">BRAK AKTYWNEJ SESJI</div>`;
+                container.innerHTML = `<div class="msg">SESJA ZAMKNIĘTA</div>`;
                 return;
             }
 
             if (data.status === "otwarte") {
-                view.innerHTML = `
-                    <div class="title">${data.tytul}</div>
-                    <div class="msg">TRWA GŁOSOWANIE...</div>
-                    <div class="footer">System @mperek | RSU ZSE Gdańsk</div>
-                `;
+                container.innerHTML = `<div class="header">${data.tytul.toUpperCase()}</div><div class="msg">GŁOSOWANIE W TOKU...</div>`;
                 return;
             }
 
+            let keys = Object.keys(data.wyniki || {});
             const order = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"];
-            let keys = Object.keys(data.wyniki || {}).sort((a,b) => (order.indexOf(a) === -1 ? 99 : order.indexOf(a)) - (order.indexOf(b) === -1 ? 99 : order.indexOf(b)));
-            let total = 0; let rows = "";
-            keys.forEach(k => { total += data.wyniki[k]; rows += `<div class="row"><span>${k}</span><span>${data.wyniki[k]}</span></div>`; });
+            keys.sort((a,b) => {
+                let idxA = order.indexOf(a); let idxB = order.indexOf(b);
+                return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+            });
 
-            view.innerHTML = `
-                <div class="title">${data.tytul}</div>
-                <div class="row" style="color: #666; border-bottom: 4px solid #000;"><span>GŁOSUJĄCYCH</span><span>${total}</span></div>
-                ${rows}
-                <div class="footer">System @mperek | RSU ZSE Gdańsk</div>
+            let suma = 0; let rowsHTML = "";
+            keys.forEach(k => { suma += data.wyniki[k]; rowsHTML += `<div class="row"><span>${k}</span><span>${data.wyniki[k]}</span></div>`; });
+
+            container.innerHTML = `
+                <div class="header">${data.tytul.toUpperCase()}</div>
+                <div class="row"><span>GŁOSOWAŁO</span><span>${suma}</span></div>
+                <div style="height:50px"></div>
+                ${rowsHTML}
             `;
         });
     </script>
