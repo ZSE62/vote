@@ -3,142 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radny @mperek</title>
+    <title>Portal Radnego @mperek</title>
     <style>
-        :root { --p: #2980b9; --s: #27ae60; --d: #e74c3c; --bg: #f4f7f6; }
+        :root { --p: #2980b9; --s: #27ae60; --d: #e74c3c; --purple: #9b59b6; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 400px; }
-        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 15px; }
 
-        /* LEGITYMACJA STYL */
-        .id-card { 
-            background: linear-gradient(135deg, #1e3799, #0984e3); color: white; 
-            padding: 25px; border-radius: 15px; cursor: pointer; position: relative;
-            transform-style: preserve-3d; transition: 0.6s;
-        }
-        .id-card:active { transform: scale(0.98); }
-        .id-info { margin-top: 15px; }
-        .id-info p { margin: 2px 0; font-size: 13px; opacity: 0.9; }
+        .id-card { background: linear-gradient(135deg, #1e3799, #0984e3); color: white; padding: 25px; border-radius: 15px; position: relative; cursor: pointer; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .stat-item { background: white; padding: 10px; border-radius: 12px; text-align: center; border: 1px solid #eee; }
+        .stat-val { display: block; font-size: 20px; font-weight: bold; color: var(--p); }
 
-        /* Modal Legitymacja */
-        #legitymacjaModal { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); 
-            z-index: 3000; align-items: center; justify-content: center; padding: 20px;
-        }
-        .full-id { 
-            background: white; width: 100%; max-width: 320px; border-radius: 20px; 
-            padding: 30px; text-align: center; border-top: 10px solid #0984e3;
-        }
+        .history-list { font-size: 11px; max-height: 120px; overflow-y: auto; background: #fafafa; padding: 10px; border-radius: 10px; border: 1px solid #eee; }
+        .history-item { border-bottom: 1px solid #eee; padding: 8px 0; color: #444; }
 
-        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .btn-enter { background: var(--s); color: white; font-size: 16px; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3); }
         .btn-za { background: var(--s); color: white; }
         .btn-przeciw { background: var(--d); color: white; }
+        .btn-wstrzymuje { background: #f1c40f; color: black; }
+
+        #legitymacjaModal, #wniosekModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-content { background: white; width: 100%; max-width: 320px; border-radius: 20px; padding: 30px; text-align: center; position: relative; }
+        textarea { width: 100%; height: 100px; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin: 10px 0; resize: none; box-sizing: border-box; font-family: inherit; }
     </style>
 </head>
 <body>
     <div class="container">
         <div id="loginArea" class="card" style="text-align: center;">
-            <h1>@mperek.</h1>
-            <input type="text" id="accessCode" placeholder="TWÓJ KOD" style="width:100%; padding:15px; font-size:20px; border-radius:10px; border:1px solid #ddd; box-sizing:border-box;">
-            <button class="btn" style="background:var(--p); color:white" onclick="zaloguj()">ZALOGUJ SIĘ</button>
+            <h1 style="margin-bottom:5px;">@mperek.</h1>
+            <p style="font-size: 12px; color: #777; margin-bottom: 20px;">PORTAL RADNEGO ZSE</p>
+            <input type="text" id="accessCode" placeholder="KOD DOSTĘPU" style="width:100%; padding:15px; font-size:18px; text-align:center; border-radius:10px; border: 1px solid #ddd; outline: none;">
+            <button class="btn" style="background:var(--p); color:white" onclick="zalogujDoProfilu()">ZALOGUJ SIĘ</button>
         </div>
 
         <div id="profileArea" style="display:none;">
-            <div class="id-card" onclick="openLeg()">
-                <small>KLIKNIJ ABY POWIĘKSZYĆ</small>
+            <div class="id-card" onclick="document.getElementById('legitymacjaModal').style.display='flex'">
+                <small style="opacity: 0.7;">LEGITYMACJA RADNEGO (Kliknij)</small>
                 <h2 id="idName" style="margin:5px 0;">-</h2>
-                <p id="idPos" style="font-size:12px; opacity:0.8;"></p>
-                <div style="position:absolute; right:15px; top:15px; font-size:40px; opacity:0.2;">🏛</div>
+                <p id="idPos" style="font-size:12px; opacity:0.9; margin:0;"></p>
+                <div style="position:absolute; right:15px; bottom:15px; font-size:40px; opacity:0.1;">🏛</div>
             </div>
-            <button class="btn" style="background:var(--s); color:white; padding:20px; margin-top:20px;" onclick="enterSession()">WEJDŹ NA SESJĘ ▶</button>
+            <div class="stat-grid">
+                <div class="stat-item"><span class="stat-val" id="statFrekwencja">0%</span><small>FREKWENCJA</small></div>
+                <div class="stat-item"><span class="stat-val" id="statSesje">0</span><small>OBECNOŚCI</small></div>
+            </div>
+            <div class="card">
+                <h4 style="margin: 0 0 10px 0; font-size: 11px; color: #555;">TWOJE WNIOSKI (SESJA)</h4>
+                <div id="mojeWnioski" class="history-list">Dołącz do sesji, aby wysłać wnioski.</div>
+            </div>
+            <button class="btn btn-enter" onclick="wejdzNaSesje()">DOŁĄCZ DO SESJI ▶</button>
+            <button class="btn" style="background:none; color:#999; font-size:11px;" onclick="localStorage.clear(); location.reload();">Wyloguj z urządzenia</button>
         </div>
 
         <div id="voteArea" class="card" style="display:none;">
-            <h3 id="vTitle" style="text-align:center;">Oczekiwanie...</h3>
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <span id="activeName" style="font-weight:bold;"></span>
+                <span style="color:var(--s); font-weight: bold;">● NA SALI OBRAD</span>
+            </div>
+            <h2 id="vTitle" style="text-align:center; font-size: 18px; min-height: 50px; display: flex; align-items: center; justify-content: center;">Czekanie na temat...</h2>
             <div id="btns"></div>
-            <button class="btn" style="background:#9b59b6; color:white" onclick="document.getElementById('m').style.display='flex'">ZGŁOŚ WNIOSEK</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px;">
+                <button class="btn" style="background:#3498db; color:white" onclick="toggleHand()">GŁOS 🖐</button>
+                <button class="btn" style="background:var(--purple); color:white" onclick="document.getElementById('wniosekModal').style.display='flex'">WNIOSEK 📝</button>
+            </div>
         </div>
     </div>
 
     <div id="legitymacjaModal" onclick="this.style.display='none'">
-        <div class="full-id">
-            <div style="font-size:50px;">👤</div>
-            <h2 id="legName"></h2>
-            <hr>
-            <p>KLASA: <b id="legClass"></b></p>
-            <p>KOMISJA: <b id="legComm"></b></p>
-            <p>STANOWISKO: <b id="legPos"></b></p>
-            <p style="font-size:10px; color:#aaa; margin-top:20px;">SYSTEM GŁOSOWANIA RSU ZSE</p>
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div style="font-size:50px; margin-bottom: 15px;">👤</div>
+            <h2 id="legName" style="margin:0;"></h2>
+            <p id="legPosM" style="color: var(--p); font-weight: bold; margin: 5px 0 20px 0;"></p>
+            <div style="text-align: left; background: #f9f9f9; padding: 15px; border-radius: 10px; font-size: 14px; line-height: 1.6;">
+                Klasa: <b id="legClass"></b><br>Komisja: <b id="legComm"></b>
+            </div>
+            <button class="btn" style="background:#eee; margin-top: 20px;" onclick="document.getElementById('legitymacjaModal').style.display='none'">ZAMKNIJ</button>
+        </div>
+    </div>
+
+    <div id="wniosekModal" onclick="this.style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="margin:0">Nowy wniosek</h3>
+            <textarea id="trescWniosku" placeholder="Wpisz treść wniosku..."></textarea>
+            <button class="btn" style="background:var(--purple); color:white" onclick="wyslijWniosek()">WYŚLIJ WNIOSEK</button>
+            <button class="btn" style="background:#eee;" onclick="document.getElementById('wniosekModal').style.display='none'">Anuluj</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
-        let myData = null;
         let myCode = localStorage.getItem("rCode");
-        let myId = localStorage.getItem("deviceId") || Math.random().toString(36).substring(7);
-        localStorage.setItem("deviceId", myId);
+        let myData = null;
 
-        if(myCode) init();
+        if(myCode) zaladujProfil();
 
-        async function init() {
+        async function zaladujProfil() {
             const snap = await getDoc(doc(db, "kody_dostepu", myCode));
             if(!snap.exists()) return;
             myData = snap.data();
             document.getElementById('loginArea').style.display = "none";
             document.getElementById('profileArea').style.display = "block";
-            document.getElementById('idName').innerText = myData.nazwisko;
-            document.getElementById('idPos').innerText = myData.stanowisko;
             
-            // Wypełnij pełną legitymację
+            document.getElementById('idName').innerText = myData.nazwisko;
             document.getElementById('legName').innerText = myData.nazwisko;
-            document.getElementById('legClass').innerText = myData.klasa;
-            document.getElementById('legComm').innerText = myData.komisja;
-            document.getElementById('legPos').innerText = myData.stanowisko;
+            document.getElementById('idPos').innerText = myData.stanowisko;
+            document.getElementById('legPosM').innerText = myData.stanowisko;
+            document.getElementById('legClass').innerText = myData.klasa || "-";
+            document.getElementById('legComm').innerText = myData.komisja || "-";
+
+            const ob = myData.sesjeObecne || 0;
+            const wsz = myData.sesjeWszystkie || 0;
+            document.getElementById('statFrekwencja').innerText = wsz > 0 ? Math.round((ob/wsz)*100) + "%" : "100%";
+            document.getElementById('statSesje').innerText = ob;
         }
 
-        window.zaloguj = async () => {
-            const c = document.getElementById('accessCode').value;
+        window.zalogujDoProfilu = async () => {
+            const c = document.getElementById('accessCode').value.trim();
             const snap = await getDoc(doc(db, "kody_dostepu", c));
             if(snap.exists()) { localStorage.setItem("rCode", c); location.reload(); }
+            else alert("Błędny kod!");
         };
 
-        window.enterSession = async () => {
-            const s = await getDoc(docRef);
-            if(s.data().status === "reset_wszystkich") return alert("Sesja nieaktywna");
-            
-            // BLOKADA WIELU URZĄDZEŃ
-            const activeUser = await getDoc(doc(db, "active_sessions", myCode));
-            if(activeUser.exists() && activeUser.data().deviceId !== myId) {
-                return alert("Jesteś już zalogowany na innym urządzeniu!");
+        window.wejdzNaSesje = async () => {
+            const snapS = await getDoc(docRef);
+            const d = snapS.data();
+            if(d.status === "reset_wszystkich" || d.status === "zamkniete") return alert("Sesja nie jest aktywna.");
+
+            const weryf = prompt("Podaj kod ponownie, aby wejść na salę:");
+            if(weryf !== myCode) return alert("Błędny kod!");
+
+            const rRef = doc(db, "kody_dostepu", myCode);
+            const rSnap = await getDoc(rRef);
+            if(rSnap.data().zalogowany) return alert("Ten radny jest już zalogowany!");
+
+            // Logika frekwencji oparta o sessionID
+            if(rSnap.data().lastSessionID !== d.sessionID) {
+                await updateDoc(rRef, { sesjeObecne: increment(1), lastSessionID: d.sessionID });
             }
+
+            await updateDoc(rRef, { zalogowany: true });
+            await updateDoc(docRef, { obecni: arrayUnion(myData.nazwisko) });
             
-            await setDoc(doc(db, "active_sessions", myCode), { deviceId: myId });
             document.getElementById('profileArea').style.display = "none";
             document.getElementById('voteArea').style.display = "block";
-            updateDoc(docRef, { obecni: arrayUnion(myData.nazwisko) });
-            startSync();
+            document.getElementById('activeName').innerText = myData.nazwisko;
+            startSyncSesja();
         };
 
-        window.openLeg = () => document.getElementById('legitymacjaModal').style.display = 'flex';
-
-        function startSync() {
+        function startSyncSesja() {
             onSnapshot(docRef, snap => {
                 const d = snap.data();
-                if(d.status === "reset_wszystkich") { 
-                    deleteDoc(doc(db, "active_sessions", myCode)); 
-                    location.reload(); 
+                if(d.status === "reset_wszystkich") {
+                    updateDoc(doc(db, "kody_dostepu", myCode), { zalogowany: false });
+                    location.reload();
                 }
-                // Logika głosowania (identyczna jak wcześniej)
+
+                document.getElementById('vTitle').innerText = d.status === "otwarte" ? d.tytul : "Oczekiwanie na głosowanie...";
+                
+                const div = document.getElementById('btns');
+                if(d.status !== "otwarte") div.innerHTML = "";
+                else {
+                    const safe = myData.nazwisko.replace(/[.#$/[\]]/g, "");
+                    const juz = d.lista_glosow && d.lista_glosow[safe];
+                    div.innerHTML = "";
+                    ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].forEach(k => {
+                        const b = document.createElement('button');
+                        b.innerText = k; b.className = "btn " + (k==="ZA"?"btn-za":k==="PRZECIW"?"btn-przeciw":"btn-wstrzymuje");
+                        if(juz) b.disabled = true;
+                        b.onclick = async () => { if(confirm("Głosujesz: "+k+"?")) await updateDoc(docRef, { [`wyniki.${k}`]: increment(1), [`lista_glosow.${safe}`]: k }); };
+                        div.appendChild(b);
+                    });
+                }
+
+                const moje = (d.wnioski || []).filter(w => w.radny === myData.nazwisko);
+                document.getElementById('mojeWnioski').innerHTML = moje.length > 0 ? 
+                    moje.map(w => `<div class="history-item"><b>${w.czas}</b>: ${w.tresc}</div>`).join('') : "Brak wniosków.";
             });
         }
+
+        window.toggleHand = async () => {
+            const s = await getDoc(docRef);
+            if((s.data().rece || []).includes(myData.nazwisko)) await updateDoc(docRef, { rece: arrayRemove(myData.nazwisko) });
+            else await updateDoc(docRef, { rece: arrayUnion(myData.nazwisko) });
+        };
+
+        window.wyslijWniosek = async () => {
+            const t = document.getElementById('trescWniosku').value;
+            if(!t) return;
+            await updateDoc(docRef, { wnioski: arrayUnion({ radny: myData.nazwisko, tresc: t, czas: new Date().toLocaleTimeString() }) });
+            document.getElementById('wniosekModal').style.display = 'none';
+            document.getElementById('trescWniosku').value = "";
+        };
     </script>
 </body>
 </html>
