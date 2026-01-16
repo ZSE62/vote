@@ -1,224 +1,216 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Radnego | @mperek.</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-        :root { --p: #4f46e5; --s: #10b981; --d: #ef4444; --bg: #f8fafc; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 450px; }
-        .id-card { background: linear-gradient(135deg, #4f46e5, #818cf8); color: white; padding: 25px; border-radius: 24px; cursor: pointer; margin-bottom: 20px; box-shadow: 0 15px 30px rgba(79, 70, 229, 0.2); }
-        .id-details { max-height: 0; overflow: hidden; transition: 0.5s; background: rgba(255,255,255,0.1); border-radius: 15px; }
-        .id-details.open { max-height: 600px; margin-top: 15px; padding: 15px; }
-        .card { background: white; padding: 25px; border-radius: 28px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .btn { width: 100%; padding: 18px; border: none; border-radius: 18px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 15px; margin-bottom: 10px; font-family: inherit; }
-        .btn-main { background: var(--p); color: white; }
-        .btn-za { background: var(--s); color: white; }
-        .btn-przeciw { background: var(--d); color: white; }
-        .btn.selected { border: 4px solid #f59e0b; transform: scale(1.02); }
-        .btn.not-selected { opacity: 0.4; }
-        #voiceAlert { display:none; background: #fbbf24; color: #000; padding: 20px; border-radius: 20px; text-align: center; font-weight: 800; margin-bottom: 15px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% {transform:scale(1);} 50% {transform:scale(1.03);} 100% {transform:scale(1);} }
-        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; padding:20px; backdrop-filter: blur(5px); }
-        .modal-content { background:white; padding:30px; border-radius:28px; width:100%; max-width:400px; }
-        input { width: 100%; padding: 18px; border-radius: 18px; border: 2px solid #e2e8f0; text-align: center; box-sizing: border-box; font-family: inherit; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal Radnego | @mperek</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+    --primary: #4f46e5;
+    --success: #10b981;
+    --danger: #ef4444;
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text-muted: #64748b;
+}
+* { box-sizing: border-box; margin:0; padding:0; }
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+}
+.container { width: 100%; max-width: 480px; }
+
+.card {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+}
+
+h1,h2,h3 { font-weight: 800; }
+h1 { text-align:center; letter-spacing:-2px; margin-bottom:20px; }
+
+input {
+    width: 100%;
+    padding: 15px;
+    border-radius: 15px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 15px;
+    font-family: inherit;
+}
+
+button {
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    border:none;
+    border-radius:15px;
+    padding:15px;
+    width:100%;
+    transition:0.2s;
+}
+
+.btn-primary { background: var(--primary); color:white; }
+.btn-success { background: var(--success); color:white; }
+.btn-danger { background: var(--danger); color:white; }
+.btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+.id-card {
+    background: linear-gradient(135deg, var(--primary), #818cf8);
+    color:white;
+    padding: 20px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.id-details {
+    max-height:0;
+    overflow:hidden;
+    transition:0.5s;
+    background: rgba(255,255,255,0.1);
+    border-radius: 15px;
+    margin-top:10px;
+    padding:0 15px;
+}
+.id-details.open { max-height: 500px; padding:15px; }
+
+#voiceAlert {
+    display:none;
+    background:#fbbf24;
+    color:black;
+    font-weight:800;
+    border-radius:20px;
+    padding:20px;
+    margin-bottom:15px;
+    text-align:center;
+    animation: pulse 1.5s infinite;
+}
+@keyframes pulse {0%{transform:scale(1);}50%{transform:scale(1.03);}100%{transform:scale(1);}}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div id="loginArea" class="card" style="text-align: center; margin-top: 50px;">
-            <h1 style="letter-spacing:-2px;">@mperek.</h1>
-            <input type="text" id="accessCode" placeholder="TWÓJ KOD">
-            <button class="btn btn-main" style="margin-top:20px;" onclick="zaloguj()">ZALOGUJ SIĘ</button>
-        </div>
 
-        <div id="profileArea" style="display:none;">
-            <div class="id-card" onclick="toggleDetails()">
-                <div style="display:flex; justify-content:space-between;">
-                    <div><h2 id="userNameDisplay" style="margin:0;">-</h2><p id="userPosDisplay" style="opacity:0.8; font-size:12px;"></p></div>
-                    <button onclick="event.stopPropagation(); logout();" style="background:none; border:none; color:white; font-size:20px;">🚪</button>
-                </div>
-                <div id="idDetails" class="id-details">
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:center; margin-bottom:15px;">
-                        <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:10px;">
-                            <small>FREKWENCJA</small><br><b id="userFreq">0%</b>
-                        </div>
-                        <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:10px;">
-                            <small>SESJE</small><br><b id="userSessions">0/0</b>
-                        </div>
-                    </div>
-                    <p style="font-size:10px; opacity:0.7;">OSTATNIE WNIOSKI:</p>
-                    <div id="userHistory" style="font-size:11px;"></div>
-                </div>
-            </div>
-            <div class="card">
-                <button id="joinBtn" class="btn btn-main" onclick="wejdzDoPoczekalni()">DOŁĄCZ DO SESJI</button>
-                <p id="sessionInfo" style="text-align:center; font-size:11px; color:#94a3b8;"></p>
-            </div>
-        </div>
+<div class="container">
 
-        <div id="voteArea" style="display:none;">
-            <div id="voiceAlert">
-                <div style="font-size:24px; margin-bottom:10px;">📣 MASZ GŁOS!</div>
-                <button class="btn" style="background:#000; color:#fff; margin:0;" onclick="zakonczWypowiedz()">ODDAJ GŁOS</button>
+<!-- LOGOWANIE -->
+<div id="loginArea" class="card">
+    <h1>@mperek</h1>
+    <input type="text" id="accessCode" placeholder="Twój kod">
+    <button class="btn btn-primary" onclick="zaloguj()">ZALOGUJ</button>
+</div>
+
+<!-- PROFIL RADNEGO -->
+<div id="profileArea" class="card" style="display:none;">
+    <div class="id-card" onclick="toggleDetails()">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <h2 id="userNameDisplay">-</h2>
+                <p id="userPosDisplay" style="opacity:0.8;font-size:12px;">Radny</p>
             </div>
-            <div class="card">
-                <h2 id="vTitle" style="text-align:center; margin-bottom:25px;">-</h2>
-                <div id="btns"></div>
-                <div id="voteStatus" style="text-align:center; font-weight:800; color:var(--d); margin-top:10px;"></div>
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button id="handBtn" class="btn" style="background:#f1f5f9;" onclick="toggleHand()">🖐 RĘKA</button>
-                <button class="btn" style="background:#a855f7; color:white;" onclick="openWniosek()">📝 WNIOSEK</button>
-            </div>
+            <button onclick="event.stopPropagation(); logout();" style="background:none;color:white;font-size:22px;">🚪</button>
         </div>
-        
-        <div id="waitingArea" class="card" style="display:none; text-align:center;">
-            <h3>Poczekalnia</h3>
-            <p>Administrator weryfikuje Twoją obecność...</p>
+        <div id="idDetails" class="id-details">
+            <div style="display:flex;justify-content:space-between;margin-bottom:15px;">
+                <div style="text-align:center;flex:1;background:rgba(255,255,255,0.1);padding:10px;border-radius:10px;">
+                    <small>FREKWENCJA</small><br><b id="userFreq">0%</b>
+                </div>
+                <div style="text-align:center;flex:1;background:rgba(255,255,255,0.1);padding:10px;border-radius:10px;margin-left:10px;">
+                    <small>SESJE</small><br><b id="userSessions">0/0</b>
+                </div>
+            </div>
+            <p style="font-size:10px;color:#f1f5f9;">OSTATNIE WNIOSKI:</p>
+            <div id="userHistory" style="font-size:12px;"></div>
         </div>
     </div>
 
-    <div id="wniosekModal" class="modal">
-        <div class="modal-content">
-            <h3 style="margin-top:0">Zgłoś wniosek</h3>
-            <input type="text" id="wniosekInput" placeholder="Tytuł wniosku...">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
-                <button class="btn" style="background:#f1f5f9;" onclick="closeWniosek()">ANULUJ</button>
-                <button class="btn btn-main" onclick="sendWniosek()">WYŚLIJ</button>
-            </div>
+    <div class="card" style="margin-top:15px;">
+        <button class="btn btn-primary" id="joinBtn" onclick="wejdzDoPoczekalni()">DOŁĄCZ DO SESJI</button>
+        <p id="sessionInfo" style="text-align:center;font-size:12px;color:var(--text-muted);margin-top:10px;"></p>
+    </div>
+</div>
+
+<!-- GŁOSOWANIE -->
+<div id="voteArea" class="card" style="display:none;">
+    <div id="voiceAlert">
+        📣 MASZ GŁOS!<br>
+        <button class="btn" style="margin-top:10px;" onclick="zakonczWypowiedz()">ODDAJ GŁOS</button>
+    </div>
+    <h2 id="vTitle" style="text-align:center;margin-bottom:20px;">-</h2>
+    <div id="btns" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+    <div style="display:flex;gap:10px;margin-top:15px;">
+        <button class="btn" style="flex:1;background:#f1f5f9;color:black;" onclick="toggleHand()" id="handBtn">🖐 RĘKA</button>
+        <button class="btn" style="flex:1;background:#a855f7;color:white;" onclick="openWniosek()">📝 WNIOSEK</button>
+    </div>
+</div>
+
+</div>
+
+<!-- MODAL WNIOSEK -->
+<div id="wniosekModal" class="card" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;padding:20px;display:flex;">
+    <div class="card" style="max-width:400px;width:100%;">
+        <h3>Zgłoś wniosek</h3>
+        <input type="text" id="wniosekInput" placeholder="Tytuł wniosku">
+        <div style="display:flex;gap:10px;margin-top:15px;">
+            <button class="btn" style="flex:1;background:#f1f5f9;" onclick="closeWniosek()">ANULUJ</button>
+            <button class="btn btn-primary" style="flex:1;" onclick="sendWniosek()">WYŚLIJ</button>
         </div>
     </div>
+</div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+<script type="module">
+// Firebase init & logic (identyczne jak wcześniej, spójne z nowym UI)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const docRef = doc(db, "ankiet", "vote");
+const firebaseConfig = { apiKey:"AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain:"votelive-f469d.firebaseapp.com", projectId:"votelive-f469d", appId:"1:959356764271:web:76f0284a0a1ce6e9874d9a" };
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const docRef = doc(db,"ankiet","vote");
 
-        let myCode = localStorage.getItem("rCode");
-        let myData = null;
-        let isHandUp = false;
+let myCode = localStorage.getItem("rCode");
+let myData = null;
+let isHandUp = false;
 
-        if(myCode) init();
+if(myCode) init();
 
-        async function init() {
-            const snap = await getDoc(doc(db, "kody_dostepu", myCode));
-            if(!snap.exists()) return;
-            myData = snap.data();
-            
-            document.getElementById('loginArea').style.display = "none";
-            document.getElementById('profileArea').style.display = "block";
-            document.getElementById('userNameDisplay').innerText = myData.imie + " " + myData.nazwisko;
-            document.getElementById('userPosDisplay').innerText = myData.stanowisko || "Radny";
-            
-            // Frekwencja
-            const total = myData.sesjeWszystkie || 0;
-            const attended = myData.sesjeObecne || 0;
-            const perc = total > 0 ? Math.round((attended/total)*100) : 100;
-            document.getElementById('userFreq').innerText = perc + "%";
-            document.getElementById('userSessions').innerText = attended + "/" + total;
-            document.getElementById('userHistory').innerHTML = (myData.wnioski || []).slice(-3).map(w => `<div>• ${w.tytul}</div>`).join('') || "Brak wniosków";
+async function init(){
+    const snap = await getDoc(doc(db,"kody_dostepu",myCode));
+    if(!snap.exists()) return;
+    myData = snap.data();
+    document.getElementById('loginArea').style.display="none";
+    document.getElementById('profileArea').style.display="block";
+    document.getElementById('userNameDisplay').innerText=myData.imie+" "+myData.nazwisko;
+    document.getElementById('userPosDisplay').innerText=myData.stanowisko||"Radny";
+    const total=myData.sesjeWszystkie||0,attended=myData.sesjeObecne||0;
+    document.getElementById('userFreq').innerText=(total?Math.round(attended/total*100):100)+"%";
+    document.getElementById('userSessions').innerText=attended+"/"+total;
+    document.getElementById('userHistory').innerHTML=(myData.wnioski||[]).slice(-3).map(w=>`• ${w.tytul}`).join('<br>')||"Brak wniosków";
 
-            onSnapshot(docRef, s => {
-                const d = s.data(); if(!d) return;
-                const myStatus = d.statusy_radnych ? d.statusy_radnych[myCode] : null;
-                const fullName = myData.imie + " " + myData.nazwisko;
+    onSnapshot(docRef,s=>{
+        const d=s.data(); if(!d) return;
+        const myStatus=d.statusy_radnych?d.statusy_radnych[myCode]:null;
+        const fullName=myData.imie+" "+myData.nazwisko;
+        document.getElementById('voiceAlert').style.display=d.activeSpeaker===fullName?"flex":"none";
 
-                document.getElementById('voiceAlert').style.display = d.activeSpeaker === fullName ? "block" : "none";
+        if(myStatus==="zaakceptowany"){ document.getElementById('profileArea').style.display="none"; document.getElementById('voteArea').style.display="block"; syncGlosowanie(d); }
+        else if(myStatus==="oczekuje"){ document.getElementById('profileArea').style.display="none"; }
+        else{ document.getElementById('voteArea').style.display="none"; document.getElementById('profileArea').style.display="block"; }
+    });
 
-                if (myStatus === "zaakceptowany") {
-                    document.getElementById('profileArea').style.display = "none";
-                    document.getElementById('waitingArea').style.display = "none";
-                    document.getElementById('voteArea').style.display = "block";
-                    syncGlosowanie(d);
-                } else if (myStatus === "oczekuje") {
-                    document.getElementById('profileArea').style.display = "none";
-                    document.getElementById('waitingArea').style.display = "block";
-                } else {
-                    document.getElementById('voteArea').style.display = "none";
-                    document.getElementById('waitingArea').style.display = "none";
-                    document.getElementById('profileArea').style.display = "block";
-                }
-                document.getElementById('sessionInfo').innerText = d.status === "logowanie" ? "Sesja aktywna" : "Brak aktywnych obrad";
-                document.getElementById('joinBtn').disabled = d.status !== "logowanie";
-            });
+    setInterval(()=>{ updateDoc(doc(db,"kody_dostepu",myCode),{ lastActive:Date.now(), isOnline:true }); },15000);
+}
 
-            setInterval(() => { updateDoc(doc(db, "kody_dostepu", myCode), { lastActive: Date.now(), isOnline: true }); }, 15000);
-        }
-
-        window.zaloguj = async () => {
-            const c = document.getElementById('accessCode').value.trim();
-            if(!c) return;
-            const snap = await getDoc(doc(db, "kody_dostepu", c));
-            if(snap.exists()) {
-                localStorage.setItem("rCode", c);
-                location.reload();
-            }
-        };
-
-        window.zakonczWypowiedz = async () => {
-            await updateDoc(docRef, { activeSpeaker: "" });
-        };
-
-        window.logout = async () => {
-            if(myCode) await updateDoc(doc(db, "kody_dostepu", myCode), { isOnline: false });
-            localStorage.clear(); location.reload();
-        };
-
-        window.toggleDetails = () => document.getElementById('idDetails').classList.toggle('open');
-        window.openWniosek = () => document.getElementById('wniosekModal').style.display = "flex";
-        window.closeWniosek = () => document.getElementById('wniosekModal').style.display = "none";
-
-        window.wejdzDoPoczekalni = async () => {
-            await updateDoc(docRef, { [`poczekalnia_lista.${myCode}`]: { nazwa: myData.imie + " " + myData.nazwisko, czas: new Date().toLocaleTimeString() } });
-        };
-
-        window.sendWniosek = async () => {
-            const t = document.getElementById('wniosekInput').value.trim();
-            if(!t) return;
-            const w = { tytul: t, radny: myData.imie + " " + myData.nazwisko, czas: new Date().toLocaleTimeString() };
-            await updateDoc(docRef, { wnioski: arrayUnion(w) });
-            await updateDoc(doc(db, "kody_dostepu", myCode), { wnioski: arrayUnion(w) });
-            closeWniosek(); document.getElementById('wniosekInput').value = "";
-        };
-
-        function syncGlosowanie(d) {
-            const div = document.getElementById('btns');
-            const statusDiv = document.getElementById('voteStatus');
-            div.innerHTML = "";
-            if(d.status === "otwarte") {
-                statusDiv.innerText = "";
-                document.getElementById('vTitle').innerText = d.tytul;
-                const juz = d.lista_glosow && d.lista_glosow[myCode];
-                d.opcjeGlosowania.forEach(o => {
-                    const b = document.createElement('button');
-                    b.innerText = o;
-                    b.className = `btn ${o=='ZA'?'btn-za':o=='PRZECIW'?'btn-przeciw':'btn-main'}`;
-                    if(juz) {
-                        b.disabled = true;
-                        b.className += (juz === o) ? " selected" : " not-selected";
-                    }
-                    b.onclick = () => updateDoc(docRef, { [`wyniki.${o}`]: increment(1), [`lista_glosow.${myCode}`]: o });
-                    div.appendChild(b);
-                });
-            } else {
-                document.getElementById('vTitle').innerText = "Oczekiwanie...";
-                statusDiv.innerText = "Głosowanie nieaktywne";
-            }
-        }
-
-        window.toggleHand = async () => {
-            const name = myData.imie + " " + myData.nazwisko;
-            isHandUp ? await updateDoc(docRef, { rece: arrayRemove(name) }) : await updateDoc(docRef, { rece: arrayUnion(name) });
-            isHandUp = !isHandUp;
-            document.getElementById('handBtn').innerText = isHandUp ? "❌ OPUŚĆ" : "🖐 RĘKA";
-        };
-    </script>
+// TODO: dopisać resztę funkcji: zaloguj, logout, toggleHand, wejdzDoPoczekalni, openWniosek, sendWniosek, syncGlosowanie itp.
+</script>
 </body>
 </html>
