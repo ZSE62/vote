@@ -9,15 +9,16 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         #dashboard { position: fixed; inset: 0; background: var(--dark); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .welcome-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 90%; max-width: 1000px; }
-        .welcome-card { background: rgba(255,255,255,0.05); padding: 30px; border-radius: 32px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .welcome-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 32px; text-align: center; cursor: pointer; transition: 0.3s; }
         .sidebar { width: 350px; background: var(--dark); color: white; padding: 25px; display: flex; flex-direction: column; }
         .main { flex: 1; padding: 30px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .btn { padding: 12px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 5px; font-family: inherit; }
+        .btn-p { background: var(--p); color: white; }
         .btn-s { background: var(--s); color: white; }
         .btn-d { background: var(--d); color: white; }
         .hidden { display: none !important; }
-        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8fafc; border-radius: 12px; margin-bottom: 5px; color: #000; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8fafc; border-radius: 12px; margin-bottom: 5px; color: #000; border: 1px solid #e2e8f0; }
         input, select { padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; width: 100%; margin-bottom: 10px; font-family: inherit; }
     </style>
 </head>
@@ -56,27 +57,35 @@
     <div id="databaseView" class="main hidden" style="grid-template-columns: 1fr;">
         <div class="card">
             <button class="btn btn-d" onclick="exitToMenu()" style="width:200px">POWRÓT</button>
-            <h2>Zarządzanie Radnymi</h2>
-            <div id="dbContent"></div>
+            <h2>Baza Radnych</h2>
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:20px;">
+                <input type="text" id="newCode" placeholder="Kod">
+                <input type="text" id="newImie" placeholder="Imię">
+                <input type="text" id="newNazwisko" placeholder="Nazwisko">
+                <button class="btn btn-p" onclick="addRadny()">Dodaj</button>
+            </div>
+            <div id="dbList"></div>
         </div>
     </div>
 
     <div id="archiveView" class="main hidden" style="grid-template-columns: 1fr;">
-        <div class="card"><button class="btn btn-d" onclick="exitToMenu()" style="width:200px">POWRÓT</button><h2>Archiwum</h2><div id="archContent"></div></div>
+        <div class="card"><button class="btn btn-d" onclick="exitToMenu()" style="width:200px">POWRÓT</button><h2>Zarchiwizowane Sesje</h2><div id="archContent"></div></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc, collection, getDocs, arrayRemove, increment, deleteField } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc, collection, getDocs, arrayRemove, increment, deleteField, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
-        // Blokada odświeżania - powrót do widoku
-        const lastView = localStorage.getItem('panelView');
-        if(lastView && lastView !== 'dashboard') showView(lastView);
+        // Blokada odświeżania
+        const currentView = localStorage.getItem('panelView');
+        if(currentView && currentView !== 'dashboard') {
+            showView(currentView);
+        }
 
         window.showView = (id) => {
             localStorage.setItem('panelView', id);
@@ -84,12 +93,15 @@
             document.querySelectorAll('.main, .sidebar').forEach(el => el.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
             if(id === 'sessionView') document.getElementById('sidebar').classList.remove('hidden');
+            if(id === 'archiveView') loadArchive();
+            if(id === 'databaseView') loadDatabase();
         };
 
         window.exitToMenu = () => { localStorage.setItem('panelView', 'dashboard'); location.reload(); };
 
         window.startNewSession = async () => {
-            await updateDoc(docRef, { status: "logowanie", statusy_radnych: {}, poczekalnia_lista: {}, activeSpeaker: "" });
+            const sid = "SESJA_" + new Date().toISOString().split('T')[0] + "_" + Date.now();
+            await updateDoc(docRef, { status: "logowanie", statusy_radnych: {}, poczekalnia_lista: {}, activeSpeaker: "", sessionID: sid, historia: [] });
             showView('sessionView');
         };
 
@@ -105,25 +117,19 @@
                 if(stat === 'zaakceptowany') presList.innerHTML += `<div class="user-row">${code} <button onclick="window.kick('${code}')" class="btn-d" style="width:80px">USUŃ</button></div>`;
             });
 
-            document.getElementById('handsList').innerHTML = (d.rece || []).map(n => `
-                <div class="user-row">${n} <button onclick="window.giveVoice('${n}')" class="btn-s" style="width:100px">DAJ GŁOS</button></div>
-            `).join('');
-
+            document.getElementById('handsList').innerHTML = (d.rece || []).map(n => `<div class="user-row">${n} <button onclick="window.giveVoice('${n}')" class="btn-s" style="width:100px">DAJ GŁOS</button></div>`).join('');
             document.getElementById('wnioskiList').innerHTML = (d.wnioski || []).map(w => `<div class="user-row"><b>${w.radny}</b>: ${w.tytul}</div>`).join('');
             document.getElementById('vBtn').innerText = d.status === "otwarte" ? "STOP GŁOSOWANIE" : "START GŁOSOWANIA";
         });
 
         window.accept = async (code) => {
-            await updateDoc(doc(db, "kody_dostepu", code), { sesjeObecne: increment(1) });
+            await updateDoc(doc(db, "kody_dostepu", code), { sesjeObecne: increment(1), sesjeWszystkie: increment(1) });
             await updateDoc(docRef, { [`statusy_radnych.${code}`]: "zaakceptowany", [`poczekalnia_lista.${code}`]: deleteField() });
         };
 
         window.kick = async (code) => { await updateDoc(docRef, { [`statusy_radnych.${code}`]: deleteField() }); };
 
-        window.giveVoice = async (name) => {
-            await updateDoc(docRef, { activeSpeaker: name, rece: arrayRemove(name) });
-            setTimeout(() => updateDoc(docRef, { activeSpeaker: "" }), 10000); // Głos wygasa po 10s lub do ręcznej zmiany
-        };
+        window.giveVoice = async (name) => { await updateDoc(docRef, { activeSpeaker: name, rece: arrayRemove(name) }); };
 
         window.toggleVote = async () => {
             const d = (await getDoc(docRef)).data();
@@ -138,11 +144,39 @@
         };
 
         window.endFullSession = async () => {
+            if(!confirm("Zarchiwizować?")) return;
             const d = (await getDoc(docRef)).data();
-            await setDoc(doc(db, "archiwum", "SESJA_"+Date.now()), d);
-            await updateDoc(docRef, { status: "zakończona", statusy_radnych: {}, poczekalnia_lista: {}, activeSpeaker: "" });
+            const archiveID = d.sessionID || ("SESJA_"+Date.now());
+            await setDoc(doc(db, "archiwum", archiveID), d);
+            await updateDoc(docRef, { status: "koniec", statusy_radnych: {}, poczekalnia_lista: {}, activeSpeaker: "", wnioski: [] });
             exitToMenu();
         };
+
+        // --- BAZA RADNYCH ---
+        async function loadDatabase() {
+            const snap = await getDocs(collection(db, "kody_dostepu"));
+            const list = document.getElementById('dbList'); list.innerHTML = "";
+            snap.forEach(docSnap => {
+                const r = docSnap.data();
+                list.innerHTML += `<div class="user-row"><span><b>${docSnap.id}</b>: ${r.imie} ${r.nazwisko}</span> <button onclick="window.delRadny('${docSnap.id}')" class="btn-d" style="width:80px">Usuń</button></div>`;
+            });
+        }
+        window.addRadny = async () => {
+            const c = document.getElementById('newCode').value;
+            await setDoc(doc(db, "kody_dostepu", c), { imie: document.getElementById('newImie').value, nazwisko: document.getElementById('newNazwisko').value, sesjeObecne: 0, sesjeWszystkie: 0, isOnline: false });
+            loadDatabase();
+        };
+        window.delRadny = async (id) => { if(confirm("Usunąć?")) { await deleteDoc(doc(db, "kody_dostepu", id)); loadDatabase(); } };
+
+        // --- ARCHIWUM ---
+        async function loadArchive() {
+            const snap = await getDocs(collection(db, "archiwum"));
+            const list = document.getElementById('archContent'); list.innerHTML = "";
+            snap.forEach(d => {
+                const data = d.data();
+                list.innerHTML += `<div class="card" style="margin-bottom:10px;"><b>ID: ${d.id}</b><br>Tytuł: ${data.tytul || 'Brak'}<br>Wnioski: ${(data.wnioski || []).length}</div>`;
+            });
+        }
     </script>
 </body>
 </html>
