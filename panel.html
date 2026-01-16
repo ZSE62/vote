@@ -2,95 +2,87 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Admin @mperek - Centrala RSU</title>
+    <title>Panel Admin @mperek</title>
     <style>
-        :root { --p: #3498db; --s: #27ae60; --d: #e74c3c; --bg: #f0f2f5; --card: #ffffff; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; color: #2c3e50; }
-        
-        /* Sidebar Navigation */
-        .sidebar { width: 300px; background: #2c3e50; color: white; padding: 25px; display: flex; flex-direction: column; box-shadow: 4px 0 10px rgba(0,0,0,0.1); }
-        .sidebar h2 { font-size: 24px; border-bottom: 2px solid #34495e; padding-bottom: 10px; margin-bottom: 20px; }
-        
-        /* Main Content Grid */
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; }
-        .card { background: var(--card); border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e1e4e8; }
-        .full-width { grid-column: span 2; }
-        
-        /* Formularze i Przyciski */
-        input, select { padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
-        .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; width: 100%; }
-        .btn-p { background: var(--p); color: white; }
-        .btn-s { background: var(--s); color: white; }
-        .btn-d { background: var(--d); color: white; }
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        /* Lista Radnych Table */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { text-align: left; padding: 12px; border-bottom: 2px solid #eee; color: #7f8c8d; font-size: 12px; }
-        td { padding: 12px; border-bottom: 1px solid #eee; font-size: 14px; }
-
-        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-        .online { background: #d4efdf; color: #1e8449; }
+        :root { --p: #3498db; --s: #27ae60; --d: #e74c3c; --dark: #2c3e50; --bg: #f8f9fa; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 320px; background: white; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 25px; background: var(--dark); color: white; text-align: center; }
+        .main { flex: 1; padding: 25px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .full { grid-column: span 2; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        .btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn-blue { background: var(--p); color: white; }
+        .btn-green { background: var(--s); color: white; }
+        .btn-red { background: var(--d); color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        th { text-align: left; padding: 10px; background: #f4f4f4; border-bottom: 2px solid #eee; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
+        .badge { padding: 3px 7px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .online { background: #e8f5e9; color: #2e7d32; }
     </style>
 </head>
 <body>
-    <div id="lock" style="position:fixed; inset:0; background:white; z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-        <h1 style="font-size:48px;">@mperek.</h1>
-        <button class="btn btn-s" style="width:250px" onclick="startSession()">OTWÓRZ NOWĄ SESJĘ</button>
+    <div id="overlay" style="position:fixed; inset:0; background:rgba(255,255,255,0.9); z-index:100; display:flex; flex-direction:column; justify-content:center; align-items:center; display:none;">
+        <h1>@mperek.</h1>
+        <button class="btn btn-green" style="width:250px" onclick="otworzSesje()">ROZPOCZNIJ NOWĄ SESJĘ</button>
     </div>
 
     <div class="sidebar">
-        <h2>Panel RSU</h2>
-        <div class="card" style="background:rgba(255,255,255,0.1); border:none;">
-            <p style="margin:0; font-size:12px; opacity:0.7;">TEMAT OBRAD</p>
-            <input type="text" id="voteTitle" placeholder="Wpisz tytuł uchwały..." style="margin-top:10px;">
-            <button id="voteAction" class="btn btn-s" onclick="toggleVote()">START GŁOSOWANIA</button>
+        <div class="sidebar-header">
+            <h1 style="margin:0; font-size:24px;">Admin.</h1>
         </div>
-        <div style="margin-top:30px;">
-            <p style="font-size:12px; opacity:0.7;">KOLEJKA DO GŁOSU</p>
-            <div id="receList" style="margin-top:10px;"></div>
+        <div style="padding: 20px;">
+            <div class="card" style="margin-bottom: 20px;">
+                <h4 style="margin:0 0 10px 0;">GŁOSOWANIE</h4>
+                <input type="text" id="vTitle" placeholder="Temat uchwały">
+                <button id="vBtn" class="btn btn-green" onclick="toggleVote()">START</button>
+            </div>
+            <div class="card">
+                <h4 style="margin:0 0 10px 0;">KOLEJKA</h4>
+                <div id="receList"></div>
+            </div>
         </div>
-        <button class="btn btn-d" style="margin-top:auto;" onclick="endSession()">ZAKOŃCZ I ZAMKNIJ SYSTEM</button>
+        <div style="padding: 20px; margin-top: auto;">
+            <button class="btn btn-red" onclick="zakonczSesje()">ZAMKNIJ SESJĘ</button>
+        </div>
     </div>
 
-    <div class="main-content">
+    <div class="main">
         <div class="card">
-            <h3>Obecność i Kworum</h3>
-            <div id="qText" style="font-weight:bold; margin-bottom:5px;">0/0</div>
-            <div style="height:8px; background:#eee; border-radius:4px; overflow:hidden;">
-                <div id="qBar" style="height:100%; width:0%; background:var(--s); transition:0.5s;"></div>
+            <h3>Obecność: <span id="qCount">0/0</span></h3>
+            <div style="height:8px; background:#eee; border-radius:4px; overflow:hidden; margin: 10px 0;">
+                <div id="qBar" style="height:100%; width:0%; background:var(--s); transition: 0.5s;"></div>
             </div>
-            <div id="listObecni" style="margin-top:15px; font-size:13px;"></div>
+            <div id="listObecni" style="font-size:12px; color:#666;"></div>
         </div>
-
         <div class="card">
-            <h3>Zgłoszone Wnioski</h3>
-            <div id="listWnioski" style="max-height:300px; overflow-y:auto;"></div>
+            <h3>Wnioski Formalne</h3>
+            <div id="listWnioski" style="max-height: 250px; overflow-y: auto;"></div>
         </div>
-
-        <div class="card full-width">
-            <h3>Baza Radnych i Skład Komisji</h3>
-            <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px;">
-                <input type="text" id="rCode" placeholder="Kod (np. 123)">
+        <div class="card full">
+            <h3>👥 Baza Radnych</h3>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
+                <input type="text" id="rCode" placeholder="Kod">
                 <input type="text" id="rName" placeholder="Imię i Nazwisko">
                 <input type="text" id="rClass" placeholder="Klasa">
                 <input type="text" id="rComm" placeholder="Komisja">
                 <input type="text" id="rPos" placeholder="Stanowisko">
             </div>
-            <button class="btn btn-p" onclick="addRadny()">DODAJ RADNEGO DO SYSTEMU</button>
-            
+            <button class="btn btn-blue" onclick="addRadny()">DODAJ RADNEGO</button>
             <table>
                 <thead>
-                    <tr><th>KOD</th><th>NAZWISKO I IMIĘ</th><th>KLASA</th><th>KOMISJA</th><th>STANOWISKO</th><th>AKCJA</th></tr>
+                    <tr><th>KOD</th><th>NAZWISKO</th><th>KLASA</th><th>FREKWENCJA</th><th>STATUS</th><th>AKCJA</th></tr>
                 </thead>
-                <tbody id="rTable"></tbody>
+                <tbody id="radniTable"></tbody>
             </table>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc, collection, getDocs, deleteDoc, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc, collection, getDocs, deleteDoc, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
         const app = initializeApp(firebaseConfig);
@@ -98,47 +90,66 @@
         const docRef = doc(db, "ankiet", "vote");
 
         onSnapshot(docRef, async snap => {
-            const d = snap.data(); if(!d) return;
-            document.getElementById('lock').style.display = d.status === "reset_wszystkich" ? "flex" : "none";
+            const d = snap.data();
+            document.getElementById('overlay').style.display = d.status === "reset_wszystkich" ? "flex" : "none";
+            document.getElementById('vBtn').innerText = d.status === "otwarte" ? "ZAMKNIJ" : "START";
             
-            const btn = document.getElementById('voteAction');
-            btn.innerText = d.status === "otwarte" ? "ZAMKNIJ GŁOSOWANIE" : "START GŁOSOWANIA";
-            btn.className = d.status === "otwarte" ? "btn btn-d" : "btn btn-s";
-
             const kody = await getDocs(collection(db, "kody_dostepu"));
-            document.getElementById('qText').innerText = `${d.obecni?.length || 0}/${kody.size}`;
+            document.getElementById('qCount').innerText = `${d.obecni?.length || 0}/${kody.size}`;
             document.getElementById('qBar').style.width = ((d.obecni?.length || 0)/kody.size*100) + "%";
 
-            document.getElementById('receList').innerHTML = (d.rece || []).map(r => `<div style="background:#34495e; padding:8px; border-radius:6px; margin-bottom:5px; font-size:13px; display:flex; justify-content:space-between;">${r} <button onclick="delR('${r}')" style="background:none; border:none; color:#e74c3c; cursor:pointer;">OK</button></div>`).join('');
+            document.getElementById('receList').innerHTML = (d.rece || []).map(r => `<div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;">${r} <button onclick="delH('${r}')" style="color:green; border:none; background:none; cursor:pointer;">OK</button></div>`).join('');
             document.getElementById('listWnioski').innerHTML = (d.wnioski || []).map(w => `<div style="border-bottom:1px solid #eee; padding:10px;"><small>${w.radny}</small><br><b>${w.tresc}</b></div>`).join('');
+            document.getElementById('listObecni').innerHTML = (d.obecni || []).join(', ');
         });
 
         onSnapshot(collection(db, "kody_dostepu"), s => {
-            const body = document.getElementById('rTable'); body.innerHTML = "";
+            const tbody = document.getElementById('radniTable'); tbody.innerHTML = "";
             s.forEach(d => {
                 const r = d.data();
-                body.innerHTML += `<tr><td>${d.id}</td><td>${r.nazwisko}</td><td>${r.klasa || '-'}</td><td>${r.komisja || '-'}</td><td>${r.stanowisko || '-'}</td><td><button onclick="remRadny('${d.id}')" style="color:red; border:none; background:none; cursor:pointer;">Usuń</button></td></tr>`;
+                const fr = r.sesjeWszystkie > 0 ? Math.round((r.sesjeObecne/r.sesjeWszystkie)*100) : 100;
+                tbody.innerHTML += `<tr>
+                    <td>${d.id}</td><td>${r.nazwisko}</td><td>${r.klasa}</td><td>${fr}% (${r.sesjeObecne || 0})</td>
+                    <td>${r.zalogowany ? '<span class="badge online">W sesji</span>' : '-'}</td>
+                    <td><button onclick="remR('${d.id}')" style="color:red; border:none; background:none; cursor:pointer;">Usuń</button></td>
+                </tr>`;
             });
         });
 
-        window.startSession = () => updateDoc(docRef, { status: "logowanie", obecni: [], rece: [], wnioski: [], wyniki: {}, lista_glosow: {} });
+        window.otworzSesje = async () => {
+            const newID = Date.now().toString();
+            const kody = await getDocs(collection(db, "kody_dostepu"));
+            for (const d of kody.docs) {
+                await updateDoc(doc(db, "kody_dostepu", d.id), { sesjeWszystkie: increment(1), zalogowany: false });
+            }
+            await updateDoc(docRef, { status: "logowanie", sessionID: newID, obecni: [], rece: [], wnioski: [], wyniki: {}, lista_glosow: {} });
+        };
+
         window.toggleVote = async () => {
             const s = await getDoc(docRef);
             if(s.data().status === "otwarte") updateDoc(docRef, { status: "zamkniete" });
-            else updateDoc(docRef, { status: "otwarte", tytul: document.getElementById('voteTitle').value || "Uchwała", wyniki: {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} });
+            else updateDoc(docRef, { status: "otwarte", tytul: document.getElementById('vTitle').value || "Głosowanie", wyniki: {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} });
         };
-        window.delR = r => updateDoc(docRef, { rece: arrayRemove(r) });
+
+        window.zakonczSesje = async () => {
+            if(!confirm("Zakończyć sesję?")) return;
+            const kody = await getDocs(collection(db, "kody_dostepu"));
+            kody.forEach(d => updateDoc(doc(db, "kody_dostepu", d.id), { zalogowany: false }));
+            await updateDoc(docRef, { status: "reset_wszystkich" });
+        };
+
         window.addRadny = () => {
             const c = document.getElementById('rCode').value;
-            setDoc(doc(db, "kody_dostepu", c), { 
+            setDoc(doc(db, "kody_dostepu", c), {
                 nazwisko: document.getElementById('rName').value,
                 klasa: document.getElementById('rClass').value,
                 komisja: document.getElementById('rComm').value,
-                stanowisko: document.getElementById('rPos').value
+                stanowisko: document.getElementById('rPos').value,
+                sesjeObecne: 0, sesjeWszystkie: 0, zalogowany: false
             });
         };
-        window.remRadny = id => deleteDoc(doc(db, "kody_dostepu", id));
-        window.endSession = () => confirm("Zamknąć system?") && updateDoc(docRef, { status: "reset_wszystkich" });
+        window.remR = (id) => deleteDoc(doc(db, "kody_dostepu", id));
+        window.delH = (r) => updateDoc(docRef, { rece: arrayRemove(r) });
     </script>
 </body>
 </html>
