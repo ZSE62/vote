@@ -9,23 +9,13 @@
         :root { --p: #4f46e5; --s: #10b981; --d: #ef4444; --bg: #f8fafc; --card: #ffffff; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #1e293b; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 420px; }
-        
         .card { background: var(--card); padding: 25px; border-radius: 28px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.7); }
-        
-        .id-card { 
-            background: linear-gradient(135deg, #4f46e5, #818cf8); color: white; 
-            padding: 30px; border-radius: 24px; position: relative; cursor: pointer;
-            box-shadow: 0 20px 30px -10px rgba(79, 70, 229, 0.4); overflow: hidden;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .id-card:active { transform: scale(0.96); }
+        .id-card { background: linear-gradient(135deg, #4f46e5, #818cf8); color: white; padding: 30px; border-radius: 24px; position: relative; cursor: pointer; box-shadow: 0 20px 30px -10px rgba(79, 70, 229, 0.4); overflow: hidden; transition: transform 0.3s; }
         .id-chip { width: 48px; height: 35px; background: linear-gradient(135deg, #fbbf24, #d97706); border-radius: 8px; margin-bottom: 20px; position: relative; z-index: 1; }
-
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
         .stat-item { background: white; padding: 18px; border-radius: 20px; text-align: center; border: 1px solid #f1f5f9; }
         .stat-val { display: block; font-size: 26px; font-weight: 800; color: var(--p); line-height: 1; margin-bottom: 5px; }
         .stat-label { font-size: 11px; font-weight: 600; color: #64748b; letter-spacing: 0.5px; }
-
         .btn { width: 100%; padding: 18px; border: none; border-radius: 18px; font-weight: 700; cursor: pointer; transition: all 0.2s; font-size: 15px; font-family: inherit; }
         .btn-main { background: var(--p); color: white; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3); }
         .btn-enter { background: var(--s); color: white; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); }
@@ -33,10 +23,7 @@
         .btn-za { background: var(--s); color: white; }
         .btn-przeciw { background: var(--d); color: white; }
         .btn-wstrzymuje { background: #f59e0b; color: white; }
-
-        input { width: 100%; padding: 18px; border-radius: 18px; border: 2px solid #e2e8f0; font-size: 18px; text-align: center; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
-        input:focus { border-color: var(--p); }
-
+        input { width: 100%; padding: 18px; border-radius: 18px; border: 2px solid #e2e8f0; font-size: 18px; text-align: center; outline: none; box-sizing: border-box; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); z-index: 100; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
         .modal-content { background: white; width: 100%; max-width: 340px; border-radius: 30px; padding: 35px; text-align: center; }
     </style>
@@ -45,72 +32,50 @@
     <div class="container">
         <div id="loginArea" class="card" style="text-align: center; margin-top: 60px;">
             <h1 style="font-size: 38px; font-weight: 800; margin: 0; letter-spacing: -2px;">@mperek.</h1>
-            <p style="color: #64748b; margin-bottom: 35px; font-weight: 600;">System Radnego v3.1</p>
-            <input type="text" id="accessCode" placeholder="WPISZ KOD" maxlength="15">
-            <button class="btn btn-main" style="margin-top: 20px;" onclick="zaloguj()">WEJDŹ DO PROFILU</button>
+            <p style="color: #64748b; margin-bottom: 35px; font-weight: 600;">System Radnego v3.3</p>
+            <input type="text" id="accessCode" placeholder="TWÓJ KOD">
+            <button class="btn btn-main" style="margin-top: 20px;" onclick="zaloguj()">ZALOGUJ SIĘ</button>
         </div>
 
         <div id="profileArea" style="display:none;">
             <div style="text-align: center; margin-bottom: 25px;"><h2 style="margin: 0; font-weight: 800;">@mperek.</h2></div>
-            
             <div class="id-card" onclick="document.getElementById('legModal').style.display='flex'">
                 <div class="id-chip"></div>
-                <small style="opacity: 0.9; font-weight: 600; letter-spacing: 1px;">RADNY SAMORZĄDU</small>
-                <h2 id="idName" style="margin: 10px 0 5px 0; font-size: 28px; letter-spacing: -1px;">-</h2>
-                <p id="idPos" style="font-size: 13px; opacity: 0.8; margin: 0; font-weight: 600;"></p>
+                <small style="opacity: 0.9; font-weight: 600;">LEGITYMACJA RADNEGO</small>
+                <h2 id="idName" style="margin: 10px 0 5px 0; font-size: 28px;">-</h2>
+                <p id="idPos" style="font-size: 13px; opacity: 0.8; margin: 0;"></p>
             </div>
-
             <div class="stat-grid">
                 <div class="stat-item"><span class="stat-val" id="statFreq">0%</span><span class="stat-label">FREKWENCJA</span></div>
                 <div class="stat-item"><span class="stat-val" id="statObec">0</span><span class="stat-label">OBECNOŚCI</span></div>
             </div>
-
             <button id="entryBtn" class="btn btn-enter" onclick="wejdzNaSesje()">DOŁĄCZ DO SESJI ▶</button>
-            <button class="btn" style="background:none; color:#94a3b8; font-size:12px; margin-top:15px; font-weight:600;" onclick="wyloguj()">Wyloguj urządzenie</button>
+            <button class="btn" style="background:none; color:#94a3b8; font-size:12px; margin-top:15px;" onclick="wyloguj()">Wyloguj urządzenie</button>
         </div>
 
         <div id="voteArea" style="display:none;">
             <div class="card" style="border-top: 5px solid var(--p);">
                 <div style="display:flex; justify-content:space-between; margin-bottom:25px; align-items:center;">
-                    <span id="activeUser" style="font-weight:800; color: var(--p); font-size:14px;"></span>
-                    <span style="background:#f1f5f9; padding:6px 12px; border-radius:100px; font-size:11px; font-weight:800; display:flex; align-items:center; gap:5px;">
-                        <span style="width:8px; height:8px; background:var(--s); border-radius:50%; display:inline-block;"></span> SESJA AKTYWNA
-                    </span>
+                    <span id="activeUser" style="font-weight:800; color: var(--p);"></span>
+                    <span style="background:#f1f5f9; padding:6px 12px; border-radius:100px; font-size:11px; font-weight:800; color: var(--s);">● SESJA NA ŻYWO</span>
                 </div>
                 <h2 id="vTitle" style="text-align:center; min-height:100px; display:flex; align-items:center; justify-content:center; font-size: 20px; line-height:1.4; font-weight:700;"></h2>
                 <div id="btns"></div>
             </div>
-            
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                 <button class="btn" style="background:#4f46e5; color:white;" onclick="zglosSie()">GŁOS 🖐</button>
                 <button class="btn" style="background:#a855f7; color:white;" onclick="document.getElementById('wniosekModal').style.display='flex'">WNIOSEK 📝</button>
             </div>
-            <button class="btn" style="background:none; color:#94a3b8; margin-top:20px; font-weight:600;" onclick="location.reload()">Wróć do profilu</button>
+            <button id="exitReqBtn" class="btn" style="background:#f8fafc; color:#94a3b8; border:2px solid #f1f5f9; margin-top:20px;" onclick="prosbaOwyjscie()">PROŚBA O WYJŚCIE 🚪</button>
         </div>
     </div>
 
-    <div id="legModal" class="modal" onclick="this.style.display='none'">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <h3 style="margin: 0 0 25px 0; color:#64748b; font-size:14px;">LEGITYMACJA</h3>
-            <p id="legName" style="font-weight: 800; font-size: 26px; margin: 0; color:var(--p);"></p>
-            <p id="legPosM" style="color: #334155; margin-top: 8px; font-weight: 700;"></p>
-            <div style="text-align: left; background: #f8fafc; padding: 20px; border-radius: 20px; margin-top: 25px;">
-                Klasa: <b id="legClass"></b><br>Komisja: <b id="legComm"></b>
-            </div>
-        </div>
-    </div>
-
-    <div id="wniosekModal" class="modal" onclick="this.style.display='none'">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <h3 style="margin:0; font-weight:800;">Wniosek formalny</h3>
-            <textarea id="trescWniosku" style="width:100%; height:120px; border: 2px solid #e2e8f0; border-radius:20px; padding:15px; margin:20px 0; font-family:inherit; outline:none;"></textarea>
-            <button class="btn btn-main" onclick="wyslijWniosek()">WYŚLIJ</button>
-        </div>
-    </div>
+    <div id="legModal" class="modal" onclick="this.style.display='none'"><div class="modal-content" onclick="event.stopPropagation()"><h3 style="margin-bottom:20px;">DANE RADNEGO</h3><p id="legName" style="font-weight:800; font-size:24px; color:var(--p);"></p><p id="legPosM"></p><div style="text-align:left; background:#f8fafc; padding:15px; border-radius:15px; margin-top:20px;">Klasa: <b id="legClass"></b><br>Komisja: <b id="legComm"></b></div></div></div>
+    <div id="wniosekModal" class="modal" onclick="this.style.display='none'"><div class="modal-content" onclick="event.stopPropagation()"><h3>Wniosek</h3><textarea id="trescWniosku" style="width:100%; height:100px; margin:15px 0; border-radius:10px; padding:10px;"></textarea><button class="btn btn-main" onclick="wyslijWniosek()">WYŚLIJ</button></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
         const app = initializeApp(firebaseConfig);
@@ -128,21 +93,15 @@
             if(!snap.exists()) { wyloguj(); return; }
             myData = snap.data();
             
-            // PILNOWANIE BLOKADY URZĄDZENIA
+            // Monitorowanie czy urządzenie nie zostało wylogowane zdalnie
             onSnapshot(rRef, (s) => {
-                const d = s.data();
-                if (!d || d.zalogowany === false) {
-                    localStorage.clear();
-                    location.reload();
-                }
+                if (!s.data() || s.data().zalogowany === false) { localStorage.clear(); location.reload(); }
             });
 
             document.getElementById('loginArea').style.display = "none";
             document.getElementById('profileArea').style.display = "block";
-            
             document.getElementById('idName').innerText = myData.nazwisko;
             document.getElementById('legName').innerText = myData.nazwisko;
-            document.getElementById('idPos').innerText = myData.stanowisko;
             document.getElementById('legPosM').innerText = myData.stanowisko;
             document.getElementById('legClass').innerText = myData.klasa;
             document.getElementById('legComm').innerText = myData.komisja;
@@ -154,8 +113,11 @@
             });
 
             onSnapshot(docRef, s => {
-                if(s.data().status === "reset_wszystkich" && document.getElementById('voteArea').style.display === "block") {
-                    location.reload();
+                const d = s.data();
+                if(document.getElementById('voteArea').style.display === "block") {
+                    if (!d.obecni.includes(myData.nazwisko) || d.status === "reset_wszystkich") {
+                        location.reload(); // Wyrzucenie do profilu gdy admin usunie z listy lub zamknie sesje
+                    }
                 }
             });
         }
@@ -165,21 +127,14 @@
             if(!c) return;
             const rRef = doc(db, "kody_dostepu", c);
             const snap = await getDoc(rRef);
-            
-            if(snap.exists()) {
-                if(snap.data().zalogowany === true) {
-                    alert("Ten profil jest już otwarty na innym urządzeniu!");
-                    return;
-                }
+            if(snap.exists() && !snap.data().zalogowany) {
                 localStorage.setItem("rCode", c);
                 await updateDoc(rRef, { zalogowany: true });
                 location.reload();
-            } else alert("Błędny kod.");
+            } else alert("Kod błędny lub już w użyciu na innym urządzeniu!");
         };
 
         window.wejdzNaSesje = async () => {
-            const s = await getDoc(docRef);
-            if(s.data().status === "reset_wszystkich") return alert("Sesja jest zamknięta.");
             await updateDoc(docRef, { obecni: arrayUnion(myData.nazwisko) });
             document.getElementById('profileArea').style.display = "none";
             document.getElementById('voteArea').style.display = "block";
@@ -192,14 +147,23 @@
                 const d = snap.data();
                 const rSnap = await getDoc(doc(db, "kody_dostepu", myCode));
                 const div = document.getElementById('btns');
+                const btnExit = document.getElementById('exitReqBtn');
                 
+                if(d.prośby_wyjscie && d.prośby_wyjscie.includes(myData.nazwisko)) {
+                    btnExit.innerText = "OCZEKIWANIE NA ZGODĘ ADMINA...";
+                    btnExit.style.background = "#fef3c7";
+                } else {
+                    btnExit.innerText = "PROŚBA O WYJŚCIE 🚪";
+                    btnExit.style.background = "#f8fafc";
+                }
+
                 if (rSnap.data().lastSessionID !== d.sessionID) {
-                    document.getElementById('vTitle').innerText = "CZEKAJ NA WERYFIKACJĘ";
-                    div.innerHTML = "<p style='color:var(--d); font-weight:700; padding:15px; background:#fef2f2; border-radius:15px;'>Administrator musi zatwierdzić Twoją obecność.</p>";
+                    document.getElementById('vTitle').innerText = "WERYFIKACJA OBECNOŚCI";
+                    div.innerHTML = "<p style='color:var(--d); font-weight:700;'>Poczekaj, aż Admin potwierdzi Twoją obecność na sali.</p>";
                     return;
                 }
 
-                document.getElementById('vTitle').innerText = d.status === "otwarte" ? d.tytul : "OCZEKIWANIE...";
+                document.getElementById('vTitle').innerText = d.status === "otwarte" ? d.tytul : "OCZEKIWANIE NA GŁOSOWANIE...";
                 div.innerHTML = "";
                 if(d.status === "otwarte") {
                     const safe = myData.nazwisko.replace(/[.#$/[\]]/g, "");
@@ -208,20 +172,21 @@
                         const b = document.createElement('button');
                         b.innerText = k; b.className = `btn btn-vote ${k==="ZA"?'btn-za':k==="PRZECIW"?'btn-przeciw':'btn-wstrzymuje'}`;
                         if(juz) b.disabled = true;
-                        b.onclick = async () => { if(confirm("Głosujesz: "+k+"?")) await updateDoc(docRef, { [`wyniki.${k}`]: increment(1), [`lista_glosow.${safe}`]: k }); };
+                        b.onclick = async () => { if(confirm("Głosować: "+k+"?")) await updateDoc(docRef, { [`wyniki.${k}`]: increment(1), [`lista_glosow.${safe}`]: k }); };
                         div.appendChild(b);
                     });
                 }
             });
         }
 
+        window.prosbaOwyjscie = async () => { await updateDoc(docRef, { prośby_wyjscie: arrayUnion(myData.nazwisko) }); };
         window.zglosSie = async () => { await updateDoc(docRef, { rece: arrayUnion(myData.nazwisko) }); };
         window.wyslijWniosek = async () => {
             const t = document.getElementById('trescWniosku').value;
             if(!t) return;
             await updateDoc(docRef, { wnioski: arrayUnion({ radny: myData.nazwisko, tresc: t, czas: new Date().toLocaleTimeString() }) });
-            document.getElementById('wniosekModal').style.display = 'none';
-            alert("Wysłano.");
+            document.getElementById('wniosekModal').style.display='none';
+            alert("Wysłano wniosek.");
         };
 
         window.wyloguj = async () => {
