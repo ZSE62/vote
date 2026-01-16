@@ -3,91 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Radnego @mperek</title>
+    <title>@mperek. | Portal Radnego</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --p: #2980b9; --s: #27ae60; --d: #e74c3c; --purple: #9b59b6; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 400px; }
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-bottom: 20px; }
-
-        /* ID CARD STYLE */
-        .id-card { 
-            background: linear-gradient(135deg, #1e3799, #0984e3); color: white; 
-            padding: 30px; border-radius: 18px; position: relative; cursor: pointer;
-            box-shadow: 0 8px 20px rgba(30, 55, 153, 0.3);
-        }
-        .id-chip { width: 40px; height: 30px; background: #ffd700; border-radius: 5px; margin-bottom: 15px; opacity: 0.8; }
+        :root { --p: #4f46e5; --s: #10b981; --d: #ef4444; --bg: #f8fafc; --card: #ffffff; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #1e293b; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 420px; }
         
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
-        .stat-item { background: white; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #edf2f7; }
-        .stat-val { display: block; font-size: 24px; font-weight: 800; color: var(--p); }
+        /* Glassmorphism Cards */
+        .card { background: var(--card); padding: 25px; border-radius: 28px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.7); }
+        
+        /* Legitymacja Design */
+        .id-card { 
+            background: linear-gradient(135deg, #4f46e5, #818cf8); color: white; 
+            padding: 30px; border-radius: 24px; position: relative; cursor: pointer;
+            box-shadow: 0 20px 30px -10px rgba(79, 70, 229, 0.4); overflow: hidden;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .id-card:active { transform: scale(0.96); }
+        .id-card::before { content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); }
+        .id-chip { width: 48px; height: 35px; background: linear-gradient(135deg, #fbbf24, #d97706); border-radius: 8px; margin-bottom: 20px; position: relative; z-index: 1; }
 
-        .btn { width: 100%; padding: 18px; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .btn-enter { background: var(--s); color: white; font-size: 16px; letter-spacing: 1px; }
-        .btn-enter:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4); }
+        /* Stats */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
+        .stat-item { background: white; padding: 18px; border-radius: 20px; text-align: center; border: 1px solid #f1f5f9; }
+        .stat-val { display: block; font-size: 26px; font-weight: 800; color: var(--p); line-height: 1; margin-bottom: 5px; }
+        .stat-label { font-size: 11px; font-weight: 600; color: #64748b; letter-spacing: 0.5px; }
+
+        /* Buttons */
+        .btn { width: 100%; padding: 18px; border: none; border-radius: 18px; font-weight: 700; cursor: pointer; transition: all 0.2s; font-size: 15px; font-family: inherit; }
+        .btn-main { background: var(--p); color: white; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3); }
+        .btn-enter { background: var(--s); color: white; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3); }
+        .btn-vote { margin-top: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
         .btn-za { background: var(--s); color: white; }
         .btn-przeciw { background: var(--d); color: white; }
-        .btn-wstrzymuje { background: #f1c40f; color: black; }
+        .btn-wstrzymuje { background: #f59e0b; color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
-        #legitymacjaModal, #wniosekModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
-        .modal-content { background: white; width: 100%; max-width: 320px; border-radius: 25px; padding: 35px; text-align: center; }
+        input { width: 100%; padding: 18px; border-radius: 18px; border: 2px solid #e2e8f0; font-size: 18px; text-align: center; outline: none; transition: border-color 0.2s; box-sizing: border-box; }
+        input:focus { border-color: var(--p); }
+
+        /* Modals */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.8); z-index: 100; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
+        .modal-content { background: white; width: 100%; max-width: 340px; border-radius: 30px; padding: 35px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
     </style>
 </head>
 <body>
     <div class="container">
-        <div id="loginArea" class="card" style="text-align: center;">
-            <h1 style="color:var(--p); margin-bottom:10px;">@mperek.</h1>
-            <p style="color:#718096; font-size:14px; margin-bottom:25px;">Portal Radnego v3.0</p>
-            <input type="text" id="accessCode" placeholder="TWÓJ UNIKALNY KOD" style="width:100%; padding:18px; font-size:18px; text-align:center; border-radius:12px; border: 2px solid #e2e8f0; outline: none;">
-            <button class="btn" style="background:var(--p); color:white" onclick="zaloguj()">ZALOGUJ DO PROFILU</button>
+        <div id="loginArea" class="card" style="text-align: center; margin-top: 60px;">
+            <h1 style="font-size: 38px; font-weight: 800; margin: 0; letter-spacing: -2px;">@mperek.</h1>
+            <p style="color: #64748b; margin-bottom: 35px; font-weight: 600;">System Radnego v3.0</p>
+            <input type="text" id="accessCode" placeholder="TWÓJ KOD" maxlength="10">
+            <button class="btn btn-main" style="margin-top: 20px;" onclick="zaloguj()">ZALOGUJ SIĘ</button>
         </div>
 
         <div id="profileArea" style="display:none;">
-            <div class="id-card" onclick="document.getElementById('legitymacjaModal').style.display='flex'">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <h2 style="margin: 0; font-weight: 800;">@mperek.</h2>
+            </div>
+            
+            <div class="id-card" onclick="document.getElementById('legModal').style.display='flex'">
                 <div class="id-chip"></div>
-                <small style="text-transform: uppercase; opacity: 0.7; font-weight: bold;">Rada Samorządu Uczniowskiego</small>
-                <h2 id="idName" style="margin:10px 0 5px 0; font-size: 26px;">-</h2>
-                <p id="idPos" style="font-size:13px; opacity:0.9; margin:0;"></p>
+                <small style="opacity: 0.9; font-weight: 600; letter-spacing: 1px;">SAMORZĄD UCZNIOWSKI</small>
+                <h2 id="idName" style="margin: 10px 0 5px 0; font-size: 28px; letter-spacing: -1px;">-</h2>
+                <p id="idPos" style="font-size: 13px; opacity: 0.8; margin: 0; font-weight: 600;"></p>
             </div>
 
             <div class="stat-grid">
-                <div class="stat-item"><span class="stat-val" id="statFrekwencja">0%</span><small style="color:#718096; font-weight: bold;">FREKWENCJA</small></div>
-                <div class="stat-item"><span class="stat-val" id="statSesje">0</span><small style="color:#718096; font-weight: bold;">OBECNOŚCI</small></div>
+                <div class="stat-item"><span class="stat-val" id="statFreq">0%</span><span class="stat-label">FREKWENCJA</span></div>
+                <div class="stat-item"><span class="stat-val" id="statObec">0</span><span class="stat-label">OBECNOŚCI</span></div>
             </div>
 
-            <button id="entryBtn" class="btn btn-enter" onclick="wejdzNaSesje()">DOŁĄCZ DO OBRAD ▶</button>
-            <button class="btn" style="background:none; color:#a0aec0; font-size:12px;" onclick="wyloguj()">Wyloguj z urządzenia</button>
+            <button id="entryBtn" class="btn btn-enter" onclick="wejdzNaSesje()">WEJDŹ NA SALĘ OBRAD ▶</button>
+            <button class="btn" style="background:none; color:#94a3b8; font-size:12px; margin-top:15px; font-weight:600;" onclick="wyloguj()">Wyloguj z profilu</button>
         </div>
 
         <div id="voteArea" style="display:none;">
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <span id="activeName" style="font-weight:bold; color:var(--p);"></span>
-                    <span style="background:#e8f5e9; color:var(--s); padding:5px 12px; border-radius:20px; font-size:11px; font-weight:bold;">● LIVE</span>
+            <div class="card" style="border-top: 5px solid var(--p);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:25px; align-items:center;">
+                    <span id="activeUser" style="font-weight:800; color: var(--p); font-size:14px;"></span>
+                    <span id="liveStatus" style="background:#f1f5f9; padding:6px 12px; border-radius:100px; font-size:11px; font-weight:800; display:flex; align-items:center; gap:5px;">
+                        <span style="width:8px; height:8px; background:var(--s); border-radius:50%; display:inline-block;"></span> ONLINE
+                    </span>
                 </div>
-                <h2 id="vTitle" style="text-align:center; min-height:80px; display:flex; align-items:center; justify-content:center; font-size: 20px; color:#2d3748;">Oczekiwanie na temat...</h2>
+                <h2 id="vTitle" style="text-align:center; min-height:100px; display:flex; align-items:center; justify-content:center; font-size: 20px; line-height:1.4; font-weight:700; color:#334155;"></h2>
                 <div id="btns"></div>
             </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                <button class="btn" style="background:#3498db; color:white" onclick="toggleHand()">GŁOS 🖐</button>
-                <button class="btn" style="background:var(--purple); color:white" onclick="document.getElementById('wniosekModal').style.display='flex'">WNIOSEK 📝</button>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <button class="btn" style="background:#4f46e5; color:white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);" onclick="zglosSie()">GŁOS 🖐</button>
+                <button class="btn" style="background:#a855f7; color:white; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);" onclick="document.getElementById('wniosekModal').style.display='flex'">WNIOSEK 📝</button>
             </div>
-            <button class="btn" style="background:none; color:#718096; margin-top:15px;" onclick="opuscSesje()">Wróć do legitymacji</button>
+            <button class="btn" style="background:none; color:#94a3b8; margin-top:20px; font-weight:600;" onclick="location.reload()">Opuść salę obrad</button>
         </div>
     </div>
 
-    <div id="legitymacjaModal" onclick="this.style.display='none'"><div class="modal-content">
-        <h3 style="color:var(--p)">LEGITYMACJA RADNEGO</h3>
-        <p id="legName" style="font-weight:800; font-size:22px; margin-bottom:0;"></p>
-        <p id="legPosM" style="color:#718096; margin-top:5px;"></p>
-        <div style="text-align:left; background:#f7fafc; padding:15px; border-radius:15px; margin-top:20px;">
-            Klasa: <b id="legClass"></b><br>Komisja: <b id="legComm"></b>
+    <div id="legModal" class="modal" onclick="this.style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="margin: 0 0 25px 0; color:#64748b; font-size:14px; letter-spacing:1px;">DANE RADNEGO</h3>
+            <p id="legName" style="font-weight: 800; font-size: 26px; margin: 0; color:var(--p);"></p>
+            <p id="legPosM" style="color: #334155; margin-top: 8px; font-weight: 700;"></p>
+            <div style="text-align: left; background: #f8fafc; padding: 20px; border-radius: 20px; margin-top: 25px; border: 1px solid #e2e8f0;">
+                <div style="margin-bottom:10px;"><small style="color:#94a3b8; font-weight:700;">KLASA</small><br><span id="legClass" style="font-weight:700;"></span></div>
+                <div><small style="color:#94a3b8; font-weight:700;">KOMISJA</small><br><span id="legComm" style="font-weight:700;"></span></div>
+            </div>
         </div>
-    </div></div>
+    </div>
+
+    <div id="wniosekModal" class="modal" onclick="this.style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="margin:0; font-weight:800;">Nowy wniosek</h3>
+            <textarea id="trescWniosku" placeholder="Wpisz treść wniosku..." style="width:100%; height:120px; border: 2px solid #e2e8f0; border-radius:20px; padding:15px; margin:20px 0; font-family:inherit; outline:none; font-size:14px;"></textarea>
+            <button class="btn btn-main" onclick="wyslijWniosek()">WYŚLIJ DO ADMINA</button>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
         const app = initializeApp(firebaseConfig);
@@ -97,24 +130,35 @@
         let myCode = localStorage.getItem("rCode");
         let myData = null;
 
-        if(myCode) start();
+        if(myCode) init();
 
-        async function start() {
+        async function init() {
             const snap = await getDoc(doc(db, "kody_dostepu", myCode));
             if(!snap.exists()) return;
             myData = snap.data();
+            
             document.getElementById('loginArea').style.display = "none";
             document.getElementById('profileArea').style.display = "block";
             
-            // UI Init
             document.getElementById('idName').innerText = myData.nazwisko;
             document.getElementById('legName').innerText = myData.nazwisko;
             document.getElementById('idPos').innerText = myData.stanowisko;
             document.getElementById('legPosM').innerText = myData.stanowisko;
-            document.getElementById('legClass').innerText = myData.klasa || "-";
-            document.getElementById('legComm').innerText = myData.komisja || "-";
+            document.getElementById('legClass').innerText = myData.klasa;
+            document.getElementById('legComm').innerText = myData.komisja;
 
-            syncStatus();
+            onSnapshot(doc(db, "kody_dostepu", myCode), s => {
+                const r = s.data();
+                document.getElementById('statFreq').innerText = r.sesjeWszystkie > 0 ? Math.round((r.sesjeObecne/r.sesjeWszystkie)*100) + "%" : "100%";
+                document.getElementById('statObec').innerText = r.sesjeObecne || 0;
+            });
+
+            onSnapshot(docRef, s => {
+                if(s.data().status === "reset_wszystkich" && document.getElementById('voteArea').style.display === "block") {
+                    alert("Sesja została zakończona przez Administratora.");
+                    location.reload();
+                }
+            });
         }
 
         window.zaloguj = async () => {
@@ -122,70 +166,64 @@
             const rRef = doc(db, "kody_dostepu", c);
             const snap = await getDoc(rRef);
             if(snap.exists()) {
-                if(snap.data().zalogowany) return alert("Profil zalogowany na innym urządzeniu!");
+                if(snap.data().zalogowany) return alert("Ten profil jest już zalogowany na innym urządzeniu!");
                 localStorage.setItem("rCode", c);
                 await updateDoc(rRef, { zalogowany: true });
                 location.reload();
-            } else alert("Kod nieprawidłowy.");
+            } else alert("Błędny kod.");
         };
-
-        function syncStatus() {
-            // Monitorowanie statusu sesji i frekwencji
-            onSnapshot(docRef, snap => {
-                const d = snap.data();
-                const isSessionActive = d.status !== "reset_wszystkich";
-                
-                // Automatyczne wyrzucenie jeśli admin zamknie sesję
-                if(!isSessionActive && document.getElementById('voteArea').style.display === "block") {
-                    alert("Sesja została zakończona przez administratora.");
-                    opuscSesje();
-                }
-
-                // Aktualizacja frekwencji w profilu
-                onSnapshot(doc(db, "kody_dostepu", myCode), rSnap => {
-                    const r = rSnap.data();
-                    const proc = r.sesjeWszystkie > 0 ? Math.round((r.sesjeObecne/r.sesjeWszystkie)*100) : 100;
-                    document.getElementById('statFrekwencja').innerText = proc + "%";
-                    document.getElementById('statSesje').innerText = r.sesjeObecne || 0;
-                });
-            });
-        }
 
         window.wejdzNaSesje = async () => {
-            const snapS = await getDoc(docRef);
-            if(snapS.data().status === "reset_wszystkich") return alert("Sesja jest obecnie zamknięta.");
-
-            // Tylko dopisujemy się do "oczekujących online" - Admin musi zatwierdzić obecność
-            await updateDoc(docRef, { obecni: arrayUnion(myData.nazwisko) });
+            const s = await getDoc(docRef);
+            if(s.data().status === "reset_wszystkich") return alert("Sesja nie jest obecnie otwarta.");
             
+            await updateDoc(docRef, { obecni: arrayUnion(myData.nazwisko) });
             document.getElementById('profileArea').style.display = "none";
             document.getElementById('voteArea').style.display = "block";
-            document.getElementById('activeName').innerText = myData.nazwisko;
-            startVoteSync();
+            document.getElementById('activeUser').innerText = myData.nazwisko;
+            startSessionSync();
         };
 
-        function startVoteSync() {
-            onSnapshot(docRef, snap => {
+        function startSessionSync() {
+            onSnapshot(docRef, async snap => {
                 const d = snap.data();
-                document.getElementById('vTitle').innerText = d.status === "otwarte" ? d.tytul : "Oczekiwanie na start głosowania...";
+                const rSnap = await getDoc(doc(db, "kody_dostepu", myCode));
+                const rData = rSnap.data();
                 const div = document.getElementById('btns');
-                if(d.status !== "otwarte") div.innerHTML = "";
-                else {
+                
+                // BLOKADA DO CZASU ZATWIERDZENIA OBECNOŚCI
+                if (rData.lastSessionID !== d.sessionID) {
+                    document.getElementById('vTitle').innerText = "OCZEKIWANIE NA WERYFIKACJĘ";
+                    div.innerHTML = "<p style='color:var(--d); font-size:13px; font-weight:700; background:#fef2f2; padding:15px; border-radius:15px;'>Twoja obecność nie została jeszcze zatwierdzona przez Administratora. Nie możesz oddawać głosów.</p>";
+                    return;
+                }
+
+                document.getElementById('vTitle').innerText = d.status === "otwarte" ? d.tytul : "OCZEKIWANIE NA TEMAT...";
+                div.innerHTML = "";
+                
+                if(d.status === "otwarte") {
                     const safe = myData.nazwisko.replace(/[.#$/[\]]/g, "");
                     const juz = d.lista_glosow && d.lista_glosow[safe];
-                    div.innerHTML = "";
                     ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].forEach(k => {
                         const b = document.createElement('button');
-                        b.innerText = k; b.className = "btn " + (k==="ZA"?"btn-za":k==="PRZECIW"?"btn-przeciw":"btn-wstrzymuje");
-                        if(juz) b.disabled = true;
-                        b.onclick = async () => { if(confirm("Potwierdzasz głos?")) await updateDoc(docRef, { [`wyniki.${k}`]: increment(1), [`lista_glosow.${safe}`]: k }); };
+                        b.innerText = k; b.className = `btn btn-vote ${k==="ZA"?'btn-za':k==="PRZECIW"?'btn-przeciw':'btn-wstrzymuje'}`;
+                        if(juz) { b.disabled = true; b.innerText = (juz === k) ? "ODDANO: " + k : k; }
+                        b.onclick = async () => { if(confirm("Oddać głos: "+k+"?")) await updateDoc(docRef, { [`wyniki.${k}`]: increment(1), [`lista_glosow.${safe}`]: k }); };
                         div.appendChild(b);
                     });
                 }
             });
         }
 
-        window.opuscSesje = () => { location.reload(); };
+        window.zglosSie = async () => { await updateDoc(docRef, { rece: arrayUnion(myData.nazwisko) }); };
+        window.wyslijWniosek = async () => {
+            const t = document.getElementById('trescWniosku').value;
+            if(!t) return;
+            await updateDoc(docRef, { wnioski: arrayUnion({ radny: myData.nazwisko, tresc: t, czas: new Date().toLocaleTimeString() }) });
+            document.getElementById('wniosekModal').style.display = 'none';
+            document.getElementById('trescWniosku').value = "";
+            alert("Wniosek został wysłany.");
+        };
         window.wyloguj = async () => {
             await updateDoc(doc(db, "kody_dostepu", myCode), { zalogowany: false });
             localStorage.clear();
