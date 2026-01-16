@@ -57,15 +57,22 @@
     </div>
 
     <div id="modalWniosek">
-        <div class="modal-content">
-            <h3 style="margin:0">Nowy wniosek</h3>
-            <textarea id="trescWniosku" placeholder="Wpisz tytuł lub treść wniosku..."></textarea>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-purple" onclick="wyslijWniosek()" style="flex:2; padding:12px; border:none; border-radius:8px; color:white; font-weight:bold; cursor:pointer;">WYŚLIJ</button>
-                <button onclick="closeModal()" style="flex:1; background:#eee; border:none; border-radius:8px; cursor:pointer;">ANULUJ</button>
-            </div>
+    <div class="modal-content" style="border-top: 5px solid #9b59b6;">
+        <h3 style="margin:0; color: #333;">Nowy wniosek formalny</h3>
+        <p style="font-size: 11px; color: #777; margin: 5px 0;">Wpisz treść, która zostanie wyświetlona prowadzącemu.</p>
+        
+        <textarea id="trescWniosku" placeholder="Np. Wniosek o przerwie w obradach..."></textarea>
+        
+        <div style="display:flex; flex-direction: column; gap:10px;">
+            <button onclick="wyslijWniosek()" style="padding:15px; background:#9b59b6; color:white; border:none; border-radius:10px; font-weight:bold; font-size: 14px; cursor:pointer; box-shadow: 0 4px 0 #7d4593; transition: 0.1s;" onmousedown="this.style.transform='translateY(2px)'; this.style.boxShadow='0 2px 0 #7d4593'" onmouseup="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 0 #7d4593'">
+                ZATWIERDŹ I WYŚLIJ 📩
+            </button>
+            <button onclick="closeModal()" style="padding:10px; background:none; border: 1px solid #ccc; color: #777; border-radius:10px; cursor:pointer; font-size: 12px;">
+                Anuluj
+            </button>
         </div>
     </div>
+</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -164,3 +171,4 @@
     </script>
 </body>
 </html>
+
