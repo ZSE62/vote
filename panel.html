@@ -18,8 +18,11 @@
         .btn-s { background: var(--s); color: white; }
         .btn-d { background: var(--d); color: white; }
         .hidden { display: none !important; }
-        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8fafc; border-radius: 12px; margin-bottom: 5px; color: #000; border: 1px solid #e2e8f0; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 12px; margin-bottom: 5px; color: #000; border: 1px solid #e2e8f0; font-size: 13px; }
         input, select { padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; width: 100%; margin-bottom: 10px; font-family: inherit; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; padding: 10px; font-size: 11px; color: #64748b; text-transform: uppercase; }
+        td { padding: 10px; border-top: 1px solid #f1f5f9; color: #000; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -36,7 +39,7 @@
     <div id="sidebar" class="sidebar hidden">
         <button class="btn btn-d" onclick="exitToMenu()">WYJDŹ DO MENU</button>
         <div class="card" style="background:none; color:white; border:1px solid rgba(255,255,255,0.1); margin-top:20px;">
-            <input type="text" id="vTitle" placeholder="Temat obrad...">
+            <input type="text" id="vTitle" placeholder="Temat punktu obrad...">
             <select id="vType" onchange="document.getElementById('customOpt').classList.toggle('hidden', this.value!='imienne')">
                 <option value="standard">Standard (ZA/PRZ/WST)</option>
                 <option value="imienne">Imienne (Własne)</option>
@@ -56,20 +59,25 @@
 
     <div id="databaseView" class="main hidden" style="grid-template-columns: 1fr;">
         <div class="card">
-            <button class="btn btn-d" onclick="exitToMenu()" style="width:200px">POWRÓT</button>
-            <h2>Baza Radnych</h2>
-            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:20px;">
-                <input type="text" id="newCode" placeholder="Kod">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <button class="btn btn-d" onclick="exitToMenu()" style="width:150px; margin:0;">POWRÓT</button>
+                <h2 style="margin:0;">Baza Radnych</h2>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; background:#f8fafc; padding:20px; border-radius:20px;">
+                <input type="text" id="newCode" placeholder="KOD">
                 <input type="text" id="newImie" placeholder="Imię">
                 <input type="text" id="newNazwisko" placeholder="Nazwisko">
-                <button class="btn btn-p" onclick="addRadny()">Dodaj</button>
+                <button class="btn btn-p" onclick="addRadny()" style="margin:0;">DODAJ</button>
             </div>
-            <div id="dbList"></div>
+            <table>
+                <thead><tr><th>KOD</th><th>NAZWISKO I IMIĘ</th><th>FREKWENCJA</th><th>STATUS</th><th>AKCJA</th></tr></thead>
+                <tbody id="dbList"></tbody>
+            </table>
         </div>
     </div>
 
     <div id="archiveView" class="main hidden" style="grid-template-columns: 1fr;">
-        <div class="card"><button class="btn btn-d" onclick="exitToMenu()" style="width:200px">POWRÓT</button><h2>Zarchiwizowane Sesje</h2><div id="archContent"></div></div>
+        <div class="card"><button class="btn btn-d" onclick="exitToMenu()" style="width:200px">POWRÓT</button><h2>Archiwum Sesji</h2><div id="archContent"></div></div>
     </div>
 
     <script type="module">
@@ -81,11 +89,8 @@
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
-        // Blokada odświeżania
-        const currentView = localStorage.getItem('panelView');
-        if(currentView && currentView !== 'dashboard') {
-            showView(currentView);
-        }
+        const curView = localStorage.getItem('panelView');
+        if(curView && curView !== 'dashboard') showView(curView);
 
         window.showView = (id) => {
             localStorage.setItem('panelView', id);
@@ -100,8 +105,10 @@
         window.exitToMenu = () => { localStorage.setItem('panelView', 'dashboard'); location.reload(); };
 
         window.startNewSession = async () => {
-            const sid = "SESJA_" + new Date().toISOString().split('T')[0] + "_" + Date.now();
-            await updateDoc(docRef, { status: "logowanie", statusy_radnych: {}, poczekalnia_lista: {}, activeSpeaker: "", sessionID: sid, historia: [] });
+            const rSnap = await getDocs(collection(db, "kody_dostepu"));
+            rSnap.forEach(r => updateDoc(doc(db, "kody_dostepu", r.id), { sesjeWszystkie: increment(1) }));
+            const sid = "SESJA_" + Date.now();
+            await updateDoc(docRef, { status: "logowanie", statusy_radnych: {}, poczekalnia_lista: {}, activeSpeaker: "", sessionID: sid });
             showView('sessionView');
         };
 
@@ -109,26 +116,23 @@
             const d = s.data(); if(!d) return;
             const waitList = document.getElementById('waitingList'); waitList.innerHTML = "";
             Object.entries(d.poczekalnia_lista || {}).forEach(([code, info]) => {
-                waitList.innerHTML += `<div class="user-row">${info.nazwa} <button onclick="window.accept('${code}')" class="btn-s" style="width:80px">DOPUŚĆ</button></div>`;
+                waitList.innerHTML += `<div class="user-row">${info.nazwa} <button onclick="window.accept('${code}')" class="btn-s" style="width:80px; margin:0;">OK</button></div>`;
             });
-
             const presList = document.getElementById('presenceList'); presList.innerHTML = "";
             Object.entries(d.statusy_radnych || {}).forEach(([code, stat]) => {
-                if(stat === 'zaakceptowany') presList.innerHTML += `<div class="user-row">${code} <button onclick="window.kick('${code}')" class="btn-d" style="width:80px">USUŃ</button></div>`;
+                if(stat === 'zaakceptowany') presList.innerHTML += `<div class="user-row">${code} <button onclick="window.kick('${code}')" class="btn-d" style="width:80px; margin:0;">USUŃ</button></div>`;
             });
-
-            document.getElementById('handsList').innerHTML = (d.rece || []).map(n => `<div class="user-row">${n} <button onclick="window.giveVoice('${n}')" class="btn-s" style="width:100px">DAJ GŁOS</button></div>`).join('');
+            document.getElementById('handsList').innerHTML = (d.rece || []).map(n => `<div class="user-row">${n} <button onclick="window.giveVoice('${n}')" class="btn-s" style="width:100px; margin:0;">DAJ GŁOS</button></div>`).join('');
             document.getElementById('wnioskiList').innerHTML = (d.wnioski || []).map(w => `<div class="user-row"><b>${w.radny}</b>: ${w.tytul}</div>`).join('');
-            document.getElementById('vBtn').innerText = d.status === "otwarte" ? "STOP GŁOSOWANIE" : "START GŁOSOWANIA";
+            document.getElementById('vBtn').innerText = d.status === "otwarte" ? "ZAMKNIJ GŁOSOWANIE" : "START GŁOSOWANIA";
         });
 
         window.accept = async (code) => {
-            await updateDoc(doc(db, "kody_dostepu", code), { sesjeObecne: increment(1), sesjeWszystkie: increment(1) });
+            await updateDoc(doc(db, "kody_dostepu", code), { sesjeObecne: increment(1) });
             await updateDoc(docRef, { [`statusy_radnych.${code}`]: "zaakceptowany", [`poczekalnia_lista.${code}`]: deleteField() });
         };
 
         window.kick = async (code) => { await updateDoc(docRef, { [`statusy_radnych.${code}`]: deleteField() }); };
-
         window.giveVoice = async (name) => { await updateDoc(docRef, { activeSpeaker: name, rece: arrayRemove(name) }); };
 
         window.toggleVote = async () => {
@@ -146,35 +150,42 @@
         window.endFullSession = async () => {
             if(!confirm("Zarchiwizować?")) return;
             const d = (await getDoc(docRef)).data();
-            const archiveID = d.sessionID || ("SESJA_"+Date.now());
-            await setDoc(doc(db, "archiwum", archiveID), d);
+            await setDoc(doc(db, "archiwum", d.sessionID), d);
             await updateDoc(docRef, { status: "koniec", statusy_radnych: {}, poczekalnia_lista: {}, activeSpeaker: "", wnioski: [] });
             exitToMenu();
         };
 
-        // --- BAZA RADNYCH ---
         async function loadDatabase() {
             const snap = await getDocs(collection(db, "kody_dostepu"));
-            const list = document.getElementById('dbList'); list.innerHTML = "";
-            snap.forEach(docSnap => {
-                const r = docSnap.data();
-                list.innerHTML += `<div class="user-row"><span><b>${docSnap.id}</b>: ${r.imie} ${r.nazwisko}</span> <button onclick="window.delRadny('${docSnap.id}')" class="btn-d" style="width:80px">Usuń</button></div>`;
+            const tbody = document.getElementById('dbList'); tbody.innerHTML = "";
+            snap.forEach(ds => {
+                const r = ds.data();
+                const perc = r.sesjeWszystkie > 0 ? Math.round((r.sesjeObecne/r.sesjeWszystkie)*100) : 100;
+                tbody.innerHTML += `<tr>
+                    <td><b>${ds.id}</b></td>
+                    <td>${r.imie} ${r.nazwisko}</td>
+                    <td>${perc}% (${r.sesjeObecne}/${r.sesjeWszystkie})</td>
+                    <td>${r.isOnline ? '🟢 Online' : '⚪ Offline'}</td>
+                    <td><button onclick="window.delRadny('${ds.id}')" class="btn-d" style="padding:5px 10px; font-size:10px;">USUŃ</button></td>
+                </tr>`;
             });
         }
         window.addRadny = async () => {
             const c = document.getElementById('newCode').value;
+            if(!c) return;
             await setDoc(doc(db, "kody_dostepu", c), { imie: document.getElementById('newImie').value, nazwisko: document.getElementById('newNazwisko').value, sesjeObecne: 0, sesjeWszystkie: 0, isOnline: false });
             loadDatabase();
         };
         window.delRadny = async (id) => { if(confirm("Usunąć?")) { await deleteDoc(doc(db, "kody_dostepu", id)); loadDatabase(); } };
 
-        // --- ARCHIWUM ---
         async function loadArchive() {
             const snap = await getDocs(collection(db, "archiwum"));
             const list = document.getElementById('archContent'); list.innerHTML = "";
             snap.forEach(d => {
                 const data = d.data();
-                list.innerHTML += `<div class="card" style="margin-bottom:10px;"><b>ID: ${d.id}</b><br>Tytuł: ${data.tytul || 'Brak'}<br>Wnioski: ${(data.wnioski || []).length}</div>`;
+                list.innerHTML += `<div class="card" style="margin-bottom:10px;">
+                    <b>ID: ${d.id}</b> | Głosowań: ${(data.historia || []).length} | Wnioski: ${(data.wnioski || []).length}
+                </div>`;
             });
         }
     </script>
