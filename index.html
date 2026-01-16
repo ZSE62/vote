@@ -10,97 +10,86 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 450px; }
         
-        /* Legitymacja */
         .id-card { 
             background: linear-gradient(135deg, #4f46e5, #818cf8); 
             color: white; padding: 25px; border-radius: 24px; 
             cursor: pointer; transition: 0.3s; position: relative; overflow: hidden;
             box-shadow: 0 15px 30px rgba(79, 70, 229, 0.2); margin-bottom: 20px;
         }
-        .id-details { 
-            max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out;
-            background: rgba(255,255,255,0.1); border-radius: 15px;
-        }
+        .id-details { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; background: rgba(255,255,255,0.1); border-radius: 15px; }
         .id-details.open { max-height: 600px; margin-top: 15px; padding: 15px; }
         
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .stat-box { background: rgba(255,255,255,0.15); padding: 10px; border-radius: 12px; text-align: center; }
-        .stat-box small { font-size: 9px; text-transform: uppercase; opacity: 0.8; font-weight: 800; }
-        .stat-box div { font-size: 18px; font-weight: 800; }
-
-        /* Karty i Przyciski */
         .card { background: white; padding: 25px; border-radius: 28px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .btn { width: 100%; padding: 18px; border: none; border-radius: 18px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 15px; margin-bottom: 10px; font-family: inherit; }
         .btn-main { background: var(--p); color: white; }
         .btn-za { background: var(--s); color: white; }
         .btn-przeciw { background: var(--d); color: white; }
         .btn-wstrzymuje { background: #f59e0b; color: white; }
-        .btn:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+        
+        #voiceAlert { 
+            display:none; background: var(--s); color: white; padding: 15px; border-radius: 18px; 
+            text-align: center; font-weight: 800; margin-bottom: 15px; animation: pulse 2s infinite; 
+        }
+        @keyframes pulse { 0% {transform:scale(1);} 50% {transform:scale(1.02);} 100% {transform:scale(1);} }
+
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; padding:20px; backdrop-filter: blur(5px); }
+        .modal-content { background:white; padding:30px; border-radius:28px; width:100%; max-width:400px; }
         
         input { width: 100%; padding: 18px; border-radius: 18px; border: 2px solid #e2e8f0; text-align: center; font-size: 18px; box-sizing: border-box; font-family: inherit; }
-        
-        .waiting-room { text-align: center; padding: 40px 20px; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--p); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .history-row { font-size: 11px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
     <div class="container">
         <div id="loginArea" class="card" style="text-align: center; margin-top: 50px;">
             <h1 style="letter-spacing:-2px;">@mperek.</h1>
-            <p style="color:#64748b; font-size:14px; margin-bottom:25px;">Portal Radnego - Zaloguj się kodem</p>
-            <input type="text" id="accessCode" placeholder="TWÓJ KOD" maxlength="10">
+            <input type="text" id="accessCode" placeholder="TWÓJ KOD">
             <button class="btn btn-main" style="margin-top:20px;" onclick="zaloguj()">ZALOGUJ SIĘ</button>
         </div>
 
         <div id="profileArea" style="display:none;">
             <div class="id-card" onclick="toggleDetails()">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <h2 id="userNameDisplay" style="margin:0; font-size:22px;">-</h2>
-                        <p id="userPosDisplay" style="opacity:0.8; font-size:12px; margin:5px 0 0 0;"></p>
-                    </div>
+                    <div><h2 id="userNameDisplay" style="margin:0;">-</h2><p id="userPosDisplay" style="opacity:0.8; font-size:12px;"></p></div>
                     <div style="font-size:30px;">🪪</div>
                 </div>
-                
                 <div id="idDetails" class="id-details">
-                    <div class="stat-grid">
-                        <div class="stat-box"><small>Frekwencja</small><div id="userFreq">0%</div></div>
-                        <div class="stat-box"><small>Wnioski</small><div id="userWnioskiCount">0</div></div>
-                    </div>
-                    <p style="font-size:10px; font-weight:800; margin-bottom:5px; opacity:0.7;">TWOJA HISTORIA (OSTATNIE):</p>
-                    <div id="userHistory"></div>
+                    <div id="userHistory" style="font-size:11px;"></div>
                 </div>
             </div>
-
             <div class="card">
                 <button id="joinBtn" class="btn btn-main" onclick="wejdzDoPoczekalni()">DOŁĄCZ DO SESJI</button>
-                <p id="sessionInfo" style="text-align:center; font-size:11px; color:#94a3b8; margin:0;">Status: Sprawdzanie sesji...</p>
+                <p id="sessionInfo" style="text-align:center; font-size:11px; color:#94a3b8;">Sprawdzanie sesji...</p>
             </div>
         </div>
 
-        <div id="waitingArea" class="card waiting-room" style="display:none;">
-            <h2>Poczekalnia</h2>
+        <div id="waitingArea" class="card" style="display:none; text-align:center;">
             <div class="loader"></div>
-            <p>Twoje zgłoszenie czeka na akceptację prowadzącego obrad.</p>
-            <p style="font-size:12px; color:#94a3b8;">Nie zamykaj tej strony. Obecność zostanie zaliczona po dopuszczeniu.</p>
+            <h3>Poczekalnia</h3>
+            <p>Czekaj na akceptację administratora...</p>
         </div>
 
         <div id="voteArea" style="display:none;">
+            <div id="voiceAlert">📣 MASZ GŁOS!</div>
             <div class="card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-                    <span id="activeUser" style="font-weight:800; color:var(--p); font-size:12px;"></span>
-                    <span style="color:var(--s); font-weight:800; font-size:12px;">● AKTYWNA SESJA</span>
-                </div>
                 <h2 id="vTitle" style="text-align:center; margin-bottom:25px;">Czekam na punkt obrad...</h2>
                 <div id="btns"></div>
             </div>
-
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button id="handBtn" class="btn" style="background:#f1f5f9; color:var(--dark);" onclick="toggleHand()">🖐 PODNIEŚ RĘKĘ</button>
+                <button id="handBtn" class="btn" style="background:#f1f5f9;" onclick="toggleHand()">🖐 RĘKA</button>
                 <button class="btn" style="background:#a855f7; color:white;" onclick="openWniosek()">📝 WNIOSEK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="wniosekModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">Zgłoś wniosek</h3>
+            <input type="text" id="wniosekInput" placeholder="Tytuł wniosku...">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
+                <button class="btn" style="background:#f1f5f9;" onclick="closeWniosek()">ANULUJ</button>
+                <button class="btn btn-main" onclick="sendWniosek()">WYŚLIJ</button>
             </div>
         </div>
     </div>
@@ -122,130 +111,88 @@
 
         async function init() {
             const snap = await getDoc(doc(db, "kody_dostepu", myCode));
-            if(!snap.exists()) return logout();
+            if(!snap.exists()) return;
             myData = snap.data();
-
-            // Interfejs Profilu
             document.getElementById('loginArea').style.display = "none";
             document.getElementById('profileArea').style.display = "block";
             document.getElementById('userNameDisplay').innerText = myData.imie + " " + myData.nazwisko;
             document.getElementById('userPosDisplay').innerText = myData.stanowisko;
-            
-            // Statystyki w legitymacji
-            const freq = myData.sesjeWszystkie > 0 ? Math.round((myData.sesjeObecne/myData.sesjeWszystkie)*100) : 100;
-            document.getElementById('userFreq').innerText = freq + "%";
-            document.getElementById('userWnioskiCount').innerText = (myData.wnioski || []).length;
-            document.getElementById('userHistory').innerHTML = (myData.wnioski || []).slice(-3).reverse().map(w => `
-                <div class="history-row"><span>${w.tytul}</span><span>${w.czas}</span></div>
-            `).join('') || "Brak historii wniosków";
 
-            // Monitoring Sesji i Statusu Radnego
             onSnapshot(docRef, s => {
-                const d = s.data();
+                const d = s.data(); if(!d) return;
                 const myStatus = d.statusy_radnych ? d.statusy_radnych[myCode] : null;
+                const fullName = myData.imie + " " + myData.nazwisko;
+
+                // Powiadomienie o głosie
+                document.getElementById('voiceAlert').style.display = d.activeSpeaker === fullName ? "block" : "none";
 
                 if (myStatus === "zaakceptowany") {
-                    document.getElementById('waitingArea').style.display = "none";
                     document.getElementById('profileArea').style.display = "none";
+                    document.getElementById('waitingArea').style.display = "none";
                     document.getElementById('voteArea').style.display = "block";
-                    document.getElementById('activeUser').innerText = myData.imie + " " + myData.nazwisko;
                     syncGlosowanie(d);
                 } else if (myStatus === "oczekuje") {
                     document.getElementById('profileArea').style.display = "none";
                     document.getElementById('waitingArea').style.display = "block";
                 } else {
-                    // Reset do profilu jeśli administrator usunie radnego z sesji
                     document.getElementById('voteArea').style.display = "none";
                     document.getElementById('waitingArea').style.display = "none";
                     document.getElementById('profileArea').style.display = "block";
                 }
-
-                document.getElementById('sessionInfo').innerText = d.status === "logowanie" ? "Sesja otwarta - dołącz teraz" : "Oczekiwanie na otwarcie sesji";
                 document.getElementById('joinBtn').disabled = d.status !== "logowanie";
             });
 
-            // Ping aktywności co 15s (zwalnianie kodu)
-            setInterval(() => {
-                updateDoc(doc(db, "kody_dostepu", myCode), { lastActive: Date.now(), isOnline: true });
-            }, 15000);
+            setInterval(() => { updateDoc(doc(db, "kody_dostepu", myCode), { lastActive: Date.now(), isOnline: true }); }, 15000);
         }
 
         window.zaloguj = async () => {
             const c = document.getElementById('accessCode').value.trim();
             const snap = await getDoc(doc(db, "kody_dostepu", c));
             if(snap.exists()) {
-                const d = snap.data();
-                // Blokada jeśli kod zajęty (aktywność w ciągu ostatniej minuty)
-                if(d.isOnline && (Date.now() - d.lastActive < 60000)) {
-                    alert("Ten kod jest już zalogowany na innym urządzeniu!");
-                    return;
-                }
+                if(snap.data().isOnline && (Date.now() - snap.data().lastActive < 60000)) return alert("Kod zajęty!");
                 localStorage.setItem("rCode", c);
-                await updateDoc(doc(db, "kody_dostepu", c), { isOnline: true, lastActive: Date.now() });
                 location.reload();
-            } else {
-                alert("Błędny kod dostępu!");
             }
         };
 
         window.toggleDetails = () => document.getElementById('idDetails').classList.toggle('open');
+        window.openWniosek = () => document.getElementById('wniosekModal').style.display = "flex";
+        window.closeWniosek = () => document.getElementById('wniosekModal').style.display = "none";
 
         window.wejdzDoPoczekalni = async () => {
-            await updateDoc(docRef, { 
-                [`statusy_radnych.${myCode}`]: "oczekuje",
-                [`poczekalnia_lista.${myCode}`]: { nazwa: myData.imie + " " + myData.nazwisko, czas: new Date().toLocaleTimeString() }
-            });
+            await updateDoc(docRef, { [`poczekalnia_lista.${myCode}`]: { nazwa: myData.imie + " " + myData.nazwisko, czas: new Date().toLocaleTimeString() } });
+        };
+
+        window.sendWniosek = async () => {
+            const t = document.getElementById('wniosekInput').value.trim();
+            if(!t) return;
+            const w = { tytul: t, radny: myData.imie + " " + myData.nazwisko, czas: new Date().toLocaleTimeString() };
+            await updateDoc(docRef, { wnioski: arrayUnion(w) });
+            await updateDoc(doc(db, "kody_dostepu", myCode), { wnioski: arrayUnion(w) });
+            closeWniosek(); document.getElementById('wniosekInput').value = "";
         };
 
         function syncGlosowanie(d) {
-            const div = document.getElementById('btns');
-            const safeKey = myCode; // Używamy kodu jako klucza głosu (bezpieczniej niż nazwisko)
-            
+            const div = document.getElementById('btns'); div.innerHTML = "";
+            document.getElementById('vTitle').innerText = d.status === "otwarte" ? d.tytul : "Oczekiwanie...";
             if(d.status === "otwarte") {
-                document.getElementById('vTitle').innerText = d.tytul;
-                div.innerHTML = "";
-                const juz = d.lista_glosow && d.lista_glosow[safeKey];
-
-                const opcje = d.typ === "standard" ? ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"] : (d.opcjeGlosowania || []);
-                opcje.forEach(o => {
-                    const b = document.createElement('button');
-                    b.innerText = o;
-                    b.className = `btn ${o=='ZA'?'btn-za':o=='PRZECIW'?'btn-przeciw':o=='WSTRZYMAŁO SIĘ'?'btn-wstrzymuje':'btn-main'}`;
+                const juz = d.lista_glosow && d.lista_glosow[myCode];
+                d.opcjeGlosowania.forEach(o => {
+                    const b = document.createElement('button'); b.innerText = o;
+                    b.className = `btn ${o=='ZA'?'btn-za':o=='PRZECIW'?'btn-przeciw':'btn-main'}`;
                     if(juz) b.disabled = true;
-                    b.onclick = () => updateDoc(docRef, { [`wyniki.${o}`]: increment(1), [`lista_glosow.${safeKey}`]: o });
+                    b.onclick = () => updateDoc(docRef, { [`wyniki.${o}`]: increment(1), [`lista_glosow.${myCode}`]: o });
                     div.appendChild(b);
                 });
-            } else {
-                document.getElementById('vTitle').innerText = "Oczekiwanie na głosowanie...";
-                div.innerHTML = "";
             }
         }
 
         window.toggleHand = async () => {
             const name = myData.imie + " " + myData.nazwisko;
-            if(!isHandUp) {
-                await updateDoc(docRef, { rece: arrayUnion(name) });
-                document.getElementById('handBtn').innerText = "❌ OPUSZCZ RĘKĘ";
-                document.getElementById('handBtn').style.background = "#fee2e2";
-            } else {
-                await updateDoc(docRef, { rece: arrayRemove(name) });
-                document.getElementById('handBtn').innerText = "🖐 PODNIEŚ RĘKĘ";
-                document.getElementById('handBtn').style.background = "#f1f5f9";
-            }
+            isHandUp ? await updateDoc(docRef, { rece: arrayRemove(name) }) : await updateDoc(docRef, { rece: arrayUnion(name) });
             isHandUp = !isHandUp;
+            document.getElementById('handBtn').innerText = isHandUp ? "❌ OPUŚĆ" : "🖐 RĘKA";
         };
-
-        window.openWniosek = async () => {
-            const t = prompt("Podaj tytuł wniosku:");
-            if(t) {
-                const wniosek = { tytul: t, radny: myData.imie + " " + myData.nazwisko, czas: new Date().toLocaleTimeString() };
-                await updateDoc(docRef, { wnioski: arrayUnion(wniosek) });
-                await updateDoc(doc(db, "kody_dostepu", myCode), { wnioski: arrayUnion(wniosek) });
-                alert("Wniosek został zgłoszony.");
-            }
-        };
-
-        function logout() { localStorage.clear(); location.reload(); }
     </script>
 </body>
 </html>
