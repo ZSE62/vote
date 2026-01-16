@@ -6,76 +6,55 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --p: #4f46e5; --s: #10b981; --d: #ef4444; --dark: #0f172a; --bg: #f1f5f9; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; color: #1e293b; }
-        
-        .sidebar { width: 340px; background: var(--dark); color: white; display: flex; flex-direction: column; padding: 30px; }
-        .sidebar h1 { font-size: 32px; font-weight: 800; margin: 0 0 40px 0; letter-spacing: -2px; }
-        
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; }
+        .sidebar { width: 340px; background: var(--dark); color: white; padding: 30px; display: flex; flex-direction: column; }
         .main { flex: 1; padding: 40px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-        .card { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+        .card { background: white; border-radius: 24px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         .full { grid-column: span 2; }
-        
-        h3 { margin-top: 0; font-size: 18px; font-weight: 700; color: #334155; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        
-        input { padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; width: 100%; margin-bottom: 12px; font-family: inherit; box-sizing: border-box; outline: none; transition: border-color 0.2s; }
-        input:focus { border-color: var(--p); }
-        
-        .btn { padding: 16px; border: none; border-radius: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 12px; font-family: inherit; }
+        .btn { padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 10px; font-family: inherit; }
         .btn-p { background: var(--p); color: white; }
         .btn-s { background: var(--s); color: white; }
         .btn-d { background: var(--d); color: white; }
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th { text-align: left; padding: 15px; background: #f8fafc; font-size: 11px; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-        td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 14px; font-weight: 600; }
-        
-        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: #f8fafc; border-radius: 15px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
-        .badge { padding: 5px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; }
-        .badge-wait { background: #fef3c7; color: #92400e; }
-        .badge-ok { background: #d1fae5; color: #065f46; }
+        input { padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 15px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; font-size: 11px; color: #64748b; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h1>@mperek.</h1>
-        <div style="flex: 1;">
-            <button class="btn btn-p" onclick="nowaSesja()">NOWA SESJA (Statystyki +)</button>
-            <button class="btn btn-d" onclick="zakonczSystem()">ZAKOŃCZ I WYLOGUJ WSZYSTKICH</button>
-            <hr style="border:0; border-top:1px solid #334155; margin:30px 0;">
-            <p style="font-size:11px; font-weight:800; color:#94a3b8; margin-bottom:15px; letter-spacing:1px;">GŁOSOWANIE</p>
-            <input type="text" id="vTitle" placeholder="Temat głosowania...">
-            <button id="vBtn" class="btn btn-s" onclick="toggleVote()">START GŁOSOWANIA</button>
-        </div>
-        <div style="font-size: 12px; color: #475569; font-weight: 600;">Panel Administratora v3.0</div>
+        <h1 style="letter-spacing:-2px;">@mperek.</h1>
+        <button class="btn btn-p" onclick="nowaSesja()">NOWA SESJA (Statystyki +)</button>
+        <button class="btn btn-d" onclick="zakonczSystem()">ZAKOŃCZ I WYLOGUJ WSZYSTKICH</button>
+        <hr style="border:0; border-top:1px solid #334155; margin:20px 0;">
+        <input type="text" id="vTitle" placeholder="Temat głosowania...">
+        <button id="vBtn" class="btn btn-s" onclick="toggleVote()">START GŁOSOWANIA</button>
+        <div id="results" style="background:#1e293b; padding:15px; border-radius:15px; font-size:14px; margin-top:10px;"></div>
     </div>
 
     <div class="main">
         <div class="card">
-            <h3>👥 Weryfikacja Obecności</h3>
+            <h3>👥 Obecni na sali i Wyjścia</h3>
             <div id="presenceList"></div>
         </div>
-
         <div class="card">
             <h3>🖐 Kolejka i 📝 Wnioski</h3>
-            <div id="handList" style="margin-bottom:20px;"></div>
-            <div id="wnioskiList" style="border-top:1px solid #eee; padding-top:20px;"></div>
+            <div id="handList" style="margin-bottom:15px;"></div>
+            <div id="wnioskiList"></div>
         </div>
-
         <div class="card full">
             <h3>🗂 Baza Radnych</h3>
-            <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom:20px;">
+            <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; margin-bottom:15px;">
                 <input type="text" id="rCode" placeholder="Kod">
-                <input type="text" id="rName" placeholder="Nazwisko i Imię">
+                <input type="text" id="rName" placeholder="Nazwisko">
                 <input type="text" id="rClass" placeholder="Klasa">
                 <input type="text" id="rComm" placeholder="Komisja">
                 <input type="text" id="rPos" placeholder="Stanowisko">
             </div>
-            <button class="btn btn-p" onclick="dodajRadnego()">DODAJ RADNEGO DO BAZY</button>
+            <button class="btn btn-p" onclick="dodajRadnego()">DODAJ DO BAZY</button>
             <table>
-                <thead>
-                    <tr><th>KOD</th><th>NAZWISKO</th><th>KLASA</th><th>FREKWENCJA</th><th>AKCJA</th></tr>
-                </thead>
+                <thead><tr><th>KOD</th><th>NAZWISKO</th><th>FREKWENCJA</th><th>AKCJA</th></tr></thead>
                 <tbody id="radniTable"></tbody>
             </table>
         </div>
@@ -94,22 +73,31 @@
             const d = s.data();
             document.getElementById('vBtn').innerText = d.status === "otwarte" ? "ZAMKNIJ GŁOSOWANIE" : "START GŁOSOWANIA";
             
-            const presDiv = document.getElementById('presenceList'); presDiv.innerHTML = "";
+            if(d.wyniki) {
+                document.getElementById('results').innerHTML = `ZA: ${d.wyniki.ZA} | PRZECIW: ${d.wyniki.PRZECIW} | WSTRZ: ${d.wyniki["WSTRZYMAŁO SIĘ"]}`;
+            }
+
             const radni = await getDocs(collection(db, "kody_dostepu"));
+            const presDiv = document.getElementById('presenceList'); presDiv.innerHTML = "";
             
             (d.obecni || []).forEach(nazwisko => {
                 let rData = null; let rID = null;
                 radni.forEach(rs => { if(rs.data().nazwisko === nazwisko) { rData = rs.data(); rID = rs.id; }});
                 const zaliczone = rData && rData.lastSessionID === d.sessionID;
+                const chceWyjsc = d.prośby_wyjscie && d.prośby_wyjscie.includes(nazwisko);
+
                 presDiv.innerHTML += `
-                    <div class="user-row">
-                        <span><b>${nazwisko}</b> ${zaliczone ? '<span class="badge badge-ok">OBECNY</span>' : '<span class="badge badge-wait">CZEKA</span>'}</span>
-                        ${!zaliczone ? `<button onclick="window.zalicz('${rID}', '${d.sessionID}')" style="background:var(--s); color:white; border:none; padding:8px 15px; border-radius:10px; cursor:pointer; font-weight:700;">ZALICZ</button>` : ''}
+                    <div class="user-row" style="${chceWyjsc ? 'border:2px solid var(--d)' : ''}">
+                        <span>${nazwisko} ${chceWyjsc ? '⚠️' : ''}</span>
+                        <div style="display:flex; gap:5px;">
+                            ${!zaliczone ? `<button onclick="window.zalicz('${rID}', '${d.sessionID}')" style="background:var(--s); color:white; border:none; padding:5px 10px; border-radius:8px;">ZALICZ</button>` : '<span style="color:var(--s); font-size:10px;">OK</span>'}
+                            ${chceWyjsc ? `<button onclick="window.wypusc('${nazwisko}')" style="background:var(--d); color:white; border:none; padding:5px 10px; border-radius:8px;">WYPUŚĆ</button>` : ''}
+                        </div>
                     </div>`;
             });
 
-            document.getElementById('handList').innerHTML = (d.rece || []).map(r => `<div class="user-row"><span>🖐 <b>${r}</b></span><button onclick="window.delH('${r}')">OK</button></div>`).join('');
-            document.getElementById('wnioskiList').innerHTML = (d.wnioski || []).map(w => `<div style="background:#f1f5f9; padding:15px; border-radius:15px; margin-bottom:10px;"><small><b>${w.radny}</b> o ${w.czas}:</small><br>${w.tresc}</div>`).join('');
+            document.getElementById('handList').innerHTML = (d.rece || []).map(r => `<div class="user-row"><span>🖐 ${r}</span><button onclick="window.delH('${r}')">X</button></div>`).join('');
+            document.getElementById('wnioskiList').innerHTML = (d.wnioski || []).map(w => `<div style="background:#f1f5f9; padding:10px; border-radius:10px; font-size:12px; margin-bottom:5px;"><b>${w.radny}:</b> ${w.tresc}</div>`).join('');
         });
 
         onSnapshot(collection(db, "kody_dostepu"), s => {
@@ -117,32 +105,30 @@
             s.forEach(d => {
                 const r = d.data();
                 const f = r.sesjeWszystkie > 0 ? Math.round((r.sesjeObecne/r.sesjeWszystkie)*100) : 100;
-                tbody.innerHTML += `<tr><td>${d.id}</td><td>${r.nazwisko}</td><td>${r.klasa}</td><td>${f}%</td><td><button onclick="window.remR('${d.id}')" style="color:var(--d); border:none; background:none; cursor:pointer;">Usuń</button></td></tr>`;
+                tbody.innerHTML += `<tr><td>${d.id}</td><td>${r.nazwisko}</td><td>${f}%</td><td><button onclick="window.remR('${d.id}')">Usuń</button></td></tr>`;
             });
         });
 
         window.nowaSesja = async () => {
-            if(!confirm("Rozpocząć nową sesję? To doliczy +1 sesję wszystkim radnym.")) return;
             const newID = Date.now().toString();
             const radni = await getDocs(collection(db, "kody_dostepu"));
-            for (const rDoc of radni.docs) { await updateDoc(doc(db, "kody_dostepu", rDoc.id), { sesjeWszystkie: increment(1) }); }
-            await updateDoc(docRef, { status: "logowanie", sessionID: newID, obecni: [], rece: [], wnioski: [], wyniki: {}, lista_glosow: {} });
+            radni.forEach(r => updateDoc(doc(db, "kody_dostepu", r.id), { sesjeWszystkie: increment(1) }));
+            await updateDoc(docRef, { status: "logowanie", sessionID: newID, obecni: [], prośby_wyjscie: [], rece: [], wnioski: [], wyniki: {ZA:0, PRZECIW:0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} });
         };
 
         window.toggleVote = async () => {
             const s = await getDoc(docRef);
             if(s.data().status === "otwarte") await updateDoc(docRef, { status: "zamkniete" });
-            else await updateDoc(docRef, { status: "otwarte", tytul: document.getElementById('vTitle').value || "Głosowanie", wyniki: {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} });
+            else await updateDoc(docRef, { status: "otwarte", tytul: document.getElementById('vTitle').value || "Głosowanie", wyniki: {ZA:0, PRZECIW:0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} });
         };
 
+        window.zalicz = async (id, sID) => { await updateDoc(doc(db, "kody_dostepu", id), { sesjeObecne: increment(1), lastSessionID: sID }); };
+        window.wypusc = async (nazwisko) => { await updateDoc(docRef, { obecni: arrayRemove(nazwisko), prośby_wyjscie: arrayRemove(nazwisko) }); };
         window.zakonczSystem = async () => {
-            if(!confirm("Zakończyć obradowanie i wylogować wszystkich?")) return;
             const radni = await getDocs(collection(db, "kody_dostepu"));
             radni.forEach(r => updateDoc(doc(db, "kody_dostepu", r.id), { zalogowany: false }));
             await updateDoc(docRef, { status: "reset_wszystkich" });
         };
-
-        window.zalicz = async (id, sID) => { await updateDoc(doc(db, "kody_dostepu", id), { sesjeObecne: increment(1), lastSessionID: sID }); };
         window.dodajRadnego = () => {
             const c = document.getElementById('rCode').value;
             setDoc(doc(db, "kody_dostepu", c), {
