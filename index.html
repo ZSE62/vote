@@ -5,13 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terminal Radnego @mperek</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f7f6; padding: 15px; margin: 0; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f7f6; padding: 15px; margin: 0; color: #333; }
         .vote-container { max-width: 450px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: left; }
         .user-info { font-size: 13px; color: #777; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; display: flex; justify-content: space-between; }
+        
+        /* Styl paska kworum */
+        #kworumWrapper { margin-bottom: 15px; }
+        .kworum-label { font-size: 11px; margin-bottom: 4px; display: flex; justify-content: space-between; font-weight: bold; }
+        #kworumProgress { width: 100%; background: #eee; height: 10px; border-radius: 5px; overflow: hidden; }
+        #kworumBar { width: 0%; height: 100%; background: #e67e22; transition: 0.5s ease-in-out; }
+
         #queueStatus { background: #ebf5fb; border: 1px solid #3498db; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 13px; display: none; }
+        
         .btn { display: block; width: 100%; padding: 18px; margin: 10px 0; font-size: 1.1rem; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; }
-        .btn-za { background: #27ae60; } .btn-przeciw { background: #c0392b; } .btn-wstrzymuje { background: #f1c40f; color: #000; }
+        .btn-za { background: #27ae60; } 
+        .btn-przeciw { background: #c0392b; } 
+        .btn-wstrzymuje { background: #f1c40f; color: #000; }
         .btn:disabled { opacity: 0.2; }
+
         .request-area { margin-top: 20px; border-top: 2px solid #eee; padding-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn-req { padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; }
         .btn-hand { background: #3498db; color: white; }
@@ -20,38 +31,64 @@
     </style>
 </head>
 <body>
-    <div id="loginArea" style="padding:50px;">
+    <div id="loginArea" style="padding:50px; background: white; max-width: 350px; margin: 50px auto; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
         <h1>@mperek.</h1>
-        <input type="text" id="accessCode" placeholder="Kod dostępu" style="padding:15px; width:200px; border-radius:8px; border:1px solid #ccc;"><br><br>
-        <button onclick="zaloguj()" style="padding:15px 30px; background:#2980b9; color:white; border:none; border-radius:8px; font-weight:bold;">ZALOGUJ SIĘ</button>
+        <input type="text" id="accessCode" placeholder="Kod dostępu" style="padding:15px; width:100%; border-radius:8px; border:1px solid #ccc; box-sizing: border-box;"><br><br>
+        <button onclick="zaloguj()" style="padding:15px; width: 100%; background:#2980b9; color:white; border:none; border-radius:8px; font-weight:bold; cursor: pointer;">ZALOGUJ SIĘ</button>
     </div>
 
     <div id="voteArea" class="vote-container" style="display:none;">
-        <div class="user-info"><span>Zalogowany: <b id="userNameDisplay"></b></span> <span id="kworumStatus"></span></div>
+        <div class="user-info">
+            <span>Zalogowany: <b id="userNameDisplay"></b></span>
+        </div>
+
+        <div id="kworumWrapper">
+            <div class="kworum-label">
+                <span>Status kworum:</span>
+                <span id="kworumText">0/0</span>
+            </div>
+            <div id="kworumProgress">
+                <div id="kworumBar"></div>
+            </div>
+        </div>
+
         <div id="queueStatus"></div>
-        <h2 id="title" style="font-size:18px; text-align:center;">Czekaj na start...</h2>
+
+        <h2 id="title" style="font-size:18px; text-align:center; margin: 20px 0;">Czekaj na start...</h2>
         <div id="btns"></div>
+        
         <div class="request-area">
             <button id="handBtn" class="btn-req btn-hand" onclick="toggleHand()">PODNIEŚ RĘKĘ</button>
             <button class="btn-req btn-wniosek" onclick="zlozWniosek()">ZGŁOŚ WNIOSEK</button>
         </div>
-        <p id="msg" style="font-size:13px; text-align:center; color:#888;"></p>
+        <p id="msg" style="font-size:13px; text-align:center; color:#888; margin-top: 15px;"></p>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, arrayUnion, arrayRemove, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
+        const firebaseConfig = { 
+            apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", 
+            authDomain: "votelive-f469d.firebaseapp.com", 
+            projectId: "votelive-f469d", 
+            appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" 
+        };
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
         let userFullInfo = localStorage.getItem("zalogowanyRadny");
 
-        if (userFullInfo) { document.getElementById('loginArea').style.display = "none"; document.getElementById('voteArea').style.display = "block"; startApp(); }
+        if (userFullInfo) { 
+            document.getElementById('loginArea').style.display = "none"; 
+            document.getElementById('voteArea').style.display = "block"; 
+            startApp(); 
+        }
 
         window.zaloguj = async () => {
             const code = document.getElementById('accessCode').value.trim();
+            if(!code) return;
             const cSnap = await getDoc(doc(db, "kody_dostepu", code));
             if(!cSnap.exists()) return alert("Błędny kod!");
             userFullInfo = cSnap.data().nazwisko;
@@ -74,7 +111,7 @@
             const tresc = prompt("Wpisz tytuł/treść wniosku:");
             if(!tresc) return;
             await updateDoc(docRef, { wnioski: arrayUnion({ radny: userFullInfo, tresc: tresc, czas: new Date().toLocaleTimeString() }) });
-            alert("Wniosek został wysłany do przewodniczącego.");
+            alert("Wniosek wysłany.");
         };
 
         async function startApp() {
@@ -84,12 +121,21 @@
 
             onSnapshot(docRef, (snap) => {
                 const data = snap.data(); if(!data) return;
-                
-                // Kworum
-                const l_ob = data.obecni?.length || 0;
-                document.getElementById('kworumStatus').innerText = `Kworum: ${l_ob}/${l_max}`;
 
-                // Obsługa ręki
+                // 1. Logika paska kworum
+                const l_ob = data.obecni?.length || 0;
+                const wym = Math.floor(l_max / 2) + 1;
+                const proc = l_max > 0 ? (l_ob / l_max) * 100 : 0;
+                
+                const qText = document.getElementById('kworumText');
+                const qBar = document.getElementById('kworumBar');
+                
+                qBar.style.width = proc + "%";
+                qText.innerText = `${l_ob}/${l_max}`;
+                qBar.style.background = l_ob >= wym ? "#27ae60" : "#e67e22";
+                qText.style.color = l_ob >= wym ? "#27ae60" : "#e67e22";
+
+                // 2. Obsługa kolejki do głosu
                 const rece = data.rece || [];
                 const hBtn = document.getElementById('handBtn');
                 const mojaPoz = rece.indexOf(userFullInfo);
@@ -106,21 +152,31 @@
                     qStatus.style.display = "none";
                 }
 
-                // Głosowanie
+                // 3. Obsługa głosowania
                 const div = document.getElementById('btns');
                 const titleEl = document.getElementById('title');
-                if(data.status !== "otwarte") { titleEl.innerText = "SESJA RADY"; div.innerHTML = ""; return; }
+                const msgEl = document.getElementById('msg');
+
+                if(data.status !== "otwarte") { 
+                    titleEl.innerText = "SESJA RADY"; 
+                    div.innerHTML = ""; 
+                    msgEl.innerText = "Czekaj na rozpoczęcie głosowania...";
+                    return; 
+                }
+
                 titleEl.innerText = data.tytul;
                 const safe = userFullInfo.replace(/[.#$/[\]]/g, "");
                 const juz = data.lista_glosow && data.lista_glosow[safe];
                 div.innerHTML = "";
+                
                 ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].forEach(key => {
                     const b = document.createElement('button');
                     b.innerText = key; b.className = "btn " + (key==="ZA"?"btn-za":key==="PRZECIW"?"btn-przeciw":"btn-wstrzymuje");
                     if(juz) b.disabled = true;
-                    b.onclick = async () => { if(confirm("Na pewno?")) await updateDoc(docRef, { [`wyniki.${key}`]: increment(1), [`lista_glosow.${safe}`]: key }); };
+                    b.onclick = async () => { if(confirm("Potwierdzasz głos?")) await updateDoc(docRef, { [`wyniki.${key}`]: increment(1), [`lista_glosow.${safe}`]: key }); };
                     div.appendChild(b);
                 });
+                msgEl.innerText = juz ? "Głos oddany: " + data.lista_glosow[safe] : "Proszę oddać głos:";
             });
         }
     </script>
