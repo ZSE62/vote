@@ -1,36 +1,270 @@
-// Wewnątrz startSync() w index.html u radnego
-if(d.status === "otwarte") {
-    const safeName = (myData.imie + "_" + myData.nazwisko).replace(/\s/g, "_");
-    const juzGlosowal = d.lista_glosow && d.lista_glosow[safeName];
-    div.innerHTML = "";
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>@mperek. | Panel Administratora V4</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --p: #4f46e5; --s: #10b981; --d: #ef4444; --dark: #0f172a; --bg: #f1f5f9; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* EKRAN STARTOWY */
+        #welcomeScreen { position: fixed; inset: 0; background: var(--dark); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .welcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; max-width: 800px; padding: 40px; }
+        .welcome-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 40px; border-radius: 32px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .welcome-card:hover { background: rgba(255,255,255,0.1); transform: translateY(-10px); }
 
-    if(d.typ === "standard") {
-        // Tryb 1: ZA/PRZECIW/WSTRZ
-        ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].forEach(opcja => {
-            const b = document.createElement('button');
-            b.innerText = opcja;
-            b.className = `btn btn-vote ${opcja.startsWith("ZA")?'btn-za':opcja.startsWith("PRZE")?'btn-przeciw':'btn-wstrzymuje'}`;
-            if(juzGlosowal) b.disabled = true;
-            b.onclick = async () => {
+        /* SIDEBAR */
+        .sidebar { width: 340px; background: var(--dark); color: white; padding: 30px; display: flex; flex-direction: column; overflow-y: auto; }
+        .main { flex: 1; padding: 40px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .card { background: white; border-radius: 24px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .full { grid-column: span 2; }
+
+        /* UI ELEMENTS */
+        .quorum-container { background: #e2e8f0; height: 12px; border-radius: 100px; margin: 15px 0; overflow: hidden; }
+        #quorumBar { background: var(--s); height: 100%; width: 0%; transition: 0.5s; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: #f8fafc; border-radius: 16px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
+        .btn { padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%; font-family: inherit; margin-bottom: 8px; }
+        .btn-p { background: var(--p); color: white; }
+        .btn-s { background: var(--s); color: white; }
+        .btn-d { background: var(--d); color: white; }
+        input, select { padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; width: 100%; margin-bottom: 10px; box-sizing: border-box; font-family: inherit; }
+        
+        /* HISTORIA */
+        .history-item { background: #1e293b; padding: 15px; border-radius: 12px; margin-top: 10px; font-size: 13px; border-left: 4px solid var(--p); }
+        .history-item b { color: var(--s); }
+
+        .hidden { display: none !important; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; font-size: 11px; color: #64748b; border-bottom: 2px solid #f1f5f9; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        .tag { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; }
+        .tag-ZA { background: #dcfce7; color: #166534; }
+        .tag-PRZE { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+
+    <div id="welcomeScreen">
+        <h1 style="font-size: 54px; letter-spacing: -3px; margin-bottom: 10px;">@mperek.</h1>
+        <div class="welcome-grid">
+            <div class="welcome-card" onclick="nowaSesja()">
+                <div style="font-size: 50px;">🗳️</div>
+                <h2>Zacznij sesję</h2>
+                <p style="color: #94a3b8;">Panel prowadzenia obrad</p>
+            </div>
+            <div class="welcome-card" onclick="pokazBaze()">
+                <div style="font-size: 50px;">🗂️</div>
+                <h2>Radni (Baza)</h2>
+                <p style="color: #94a3b8;">Zarządzaj imionami i kodami</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="sidebar" class="sidebar hidden">
+        <h2 style="letter-spacing:-2px; margin-bottom: 20px;">@mperek.</h2>
+        
+        <div class="card" style="background: rgba(255,255,255,0.05); border: none; padding: 15px; color: white; margin-bottom: 20px;">
+            <small style="color: #94a3b8; font-weight: 800;">KWORUM</small>
+            <div style="display:flex; justify-content:space-between; margin-top:5px;">
+                <span id="quorumText">0/0</span>
+                <span id="quorumStatus">...</span>
+            </div>
+            <div class="quorum-container"><div id="quorumBar"></div></div>
+        </div>
+
+        <div id="voteControls">
+            <small style="color: #94a3b8; font-weight: 800;">USTAWIENIA GŁOSOWANIA</small>
+            <input type="text" id="vTitle" placeholder="Temat punktu obrad...">
+            <select id="vType">
+                <option value="standard">Tryb: ZA / PRZECIW / WSTRZ.</option>
+                <option value="imienne">Tryb: NA NAZWISKA (Wybór osoby)</option>
+            </select>
+            <button id="vBtn" class="btn btn-s" onclick="toggleVote()">START GŁOSOWANIA</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <small style="color: #94a3b8; font-weight: 800;">HISTORIA TEJ SESJI</small>
+            <div id="voteHistory"></div>
+        </div>
+
+        <button class="btn btn-d" style="margin-top: 40px;" onclick="koniecSesji()">ZAKOŃCZ SESJĘ</button>
+    </div>
+
+    <div id="sessionView" class="main hidden">
+        <div class="card">
+            <h3>👥 Obecność i Oddane Głosy</h3>
+            <div id="presenceList"></div>
+        </div>
+        <div class="card">
+            <h3>🖐 Kolejka i 📝 Wnioski</h3>
+            <div id="handList"></div>
+            <div id="wnioskiList" style="margin-top:20px;"></div>
+        </div>
+    </div>
+
+    <div id="databaseView" class="main hidden" style="grid-template-columns: 1fr;">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0;">🗂 Baza Radnych</h2>
+                <button class="btn btn-d" style="width:auto; padding:10px 20px;" onclick="location.reload()">POWRÓT</button>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(6, 1fr); gap:10px;">
+                <input type="text" id="rCode" placeholder="KOD">
+                <input type="text" id="rImie" placeholder="IMIĘ">
+                <input type="text" id="rNazwisko" placeholder="NAZWISKO">
+                <input type="text" id="rClass" placeholder="KLASA">
+                <input type="text" id="rComm" placeholder="KOMISJA">
+                <input type="text" id="rPos" placeholder="STANOWISKO">
+            </div>
+            <button class="btn btn-p" onclick="dodajRadnego()">DODAJ RADNEGO</button>
+            <table style="margin-top:20px;">
+                <thead><tr><th>KOD</th><th>IMIĘ I NAZWISKO</th><th>KLASA</th><th>FREKWENCJA</th><th>USUŃ</th></tr></thead>
+                <tbody id="radniTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, collection, getDocs, deleteDoc, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const docRef = doc(db, "ankiet", "vote");
+
+        let totalRadni = 0;
+
+        // Monitorowanie danych sesji
+        onSnapshot(docRef, async snap => {
+            const d = snap.data();
+            if(!d) return;
+
+            // Logika ekranów
+            if(d.status === "reset_wszystkich") {
+                document.getElementById('welcomeScreen').classList.remove('hidden');
+                document.getElementById('sidebar').classList.add('hidden');
+                document.getElementById('sessionView').classList.add('hidden');
+            } else {
+                document.getElementById('welcomeScreen').classList.add('hidden');
+                document.getElementById('sidebar').classList.remove('hidden');
+                document.getElementById('sessionView').classList.remove('hidden');
+            }
+
+            // Kworum
+            const obecni = d.obecni ? d.obecni.length : 0;
+            const min = Math.floor(totalRadni / 2) + 1;
+            document.getElementById('quorumText').innerText = `${obecni} / ${totalRadni}`;
+            document.getElementById('quorumBar').style.width = (obecni/totalRadni)*100 + "%";
+            document.getElementById('quorumStatus').innerText = obecni >= min ? "KWORM OK" : "BRAK KWORUM";
+            document.getElementById('quorumStatus').style.color = obecni >= min ? "var(--s)" : "var(--d)";
+
+            // Historia i wyniki
+            document.getElementById('vBtn').innerText = d.status === "otwarte" ? "ZAMKNIJ I ZAPISZ" : "START GŁOSOWANIA";
+            
+            const histDiv = document.getElementById('voteHistory');
+            histDiv.innerHTML = (d.historia || []).reverse().map(h => `
+                <div class="history-item">
+                    <b>${h.tytul}</b><br>
+                    <small>${h.wynik}</small>
+                </div>
+            `).join('');
+
+            // Lista obecnych + głosy w czasie rzeczywistym
+            const rSnap = await getDocs(collection(db, "kody_dostepu"));
+            const presDiv = document.getElementById('presenceList'); presDiv.innerHTML = "";
+            
+            (d.obecni || []).forEach(name => {
+                let rID = ""; let rFull = "";
+                rSnap.forEach(r => { if((r.data().imie + " " + r.data().nazwisko) === name) { rID = r.id; rFull = r.data(); }});
+                
+                const glos = d.lista_glosow ? d.lista_glosow[name.replace(/\s/g, "_")] : null;
+                const zaliczony = rFull && rFull.lastSessionID === d.sessionID;
+
+                presDiv.innerHTML += `
+                    <div class="user-row">
+                        <div>
+                            <b>${name}</b> 
+                            ${glos ? `<span class="tag tag-ZA" style="margin-left:10px">${glos}</span>` : ''}
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            ${!zaliczony ? `<button onclick="window.zalicz('${rID}', '${d.sessionID}')" class="btn-s" style="padding:5px 10px; width:auto; margin:0;">OBECNY</button>` : '✅'}
+                            <button onclick="window.wypusc('${name}')" class="btn-d" style="padding:5px 10px; width:auto; margin:0;">WYRZUĆ</button>
+                        </div>
+                    </div>`;
+            });
+
+            document.getElementById('handList').innerHTML = (d.rece || []).map(r => `<div class="user-row"><span>🖐 ${r}</span><button onclick="window.delH('${r}')">OK</button></div>`).join('');
+            document.getElementById('wnioskiList').innerHTML = (d.wnioski || []).map(w => `<div class="card" style="padding:10px; margin-bottom:5px; font-size:12px;"><b>${w.radny}:</b> ${w.tresc}</div>`).join('');
+        });
+
+        // Monitorowanie Bazy
+        onSnapshot(collection(db, "kody_dostepu"), s => {
+            totalRadni = s.size;
+            const tbody = document.getElementById('radniTable'); tbody.innerHTML = "";
+            s.forEach(d => {
+                const r = d.data();
+                const f = r.sesjeWszystkie > 0 ? Math.round((r.sesjeObecne/r.sesjeWszystkie)*100) : 100;
+                tbody.innerHTML += `<tr><td>${d.id}</td><td>${r.imie} ${r.nazwisko}</td><td>${r.klasa}</td><td>${f}%</td><td><button onclick="window.remR('${d.id}')">X</button></td></tr>`;
+            });
+        });
+
+        window.toggleVote = async () => {
+            const snap = await getDoc(docRef);
+            const d = snap.data();
+            const tytul = document.getElementById('vTitle').value || "Głosowanie bez tytułu";
+            const typ = document.getElementById('vType').value;
+
+            if(d.status === "otwarte") {
+                // ZAMYKANIE: Generowanie wyniku do historii
+                let wynikTxt = "";
+                if(d.typ === "standard") {
+                    wynikTxt = `ZA: ${d.wyniki.ZA} | PRZECIW: ${d.wyniki.PRZECIW} | WSTRZ: ${d.wyniki["WSTRZYMAŁO SIĘ"]}`;
+                } else {
+                    wynikTxt = "Głosowanie Imienne zakończone";
+                }
+                
                 await updateDoc(docRef, { 
-                    [`wyniki.${opcja}`]: increment(1), 
-                    [`lista_glosow.${safeName}`]: opcja 
+                    status: "zamkniete",
+                    historia: arrayUnion({ tytul: d.tytul, wynik: wynikTxt, czas: new Date().toLocaleTimeString() })
                 });
-            };
-            div.appendChild(b);
-        });
-    } else {
-        // Tryb 2: NA NAZWISKA (Pobieranie listy obecnych)
-        d.obecni.forEach(osoba => {
-            const b = document.createElement('button');
-            b.innerText = osoba;
-            b.className = "btn btn-main";
-            b.style.marginBottom = "5px";
-            if(juzGlosowal) b.disabled = true;
-            b.onclick = async () => {
-                await updateDoc(docRef, { [`lista_glosow.${safeName}`]: "Głos na: " + osoba });
-            };
-            div.appendChild(b);
-        });
-    }
-}
+            } else {
+                // OTWIERANIE
+                await updateDoc(docRef, { 
+                    status: "otwarte", 
+                    tytul: tytul, 
+                    typ: typ,
+                    wyniki: {ZA:0, PRZECIW:0, "WSTRZYMAŁO SIĘ":0}, 
+                    lista_glosow: {} 
+                });
+            }
+        };
+
+        window.nowaSesja = async () => {
+            const id = Date.now().toString();
+            const rs = await getDocs(collection(db, "kody_dostepu"));
+            rs.forEach(r => updateDoc(doc(db, "kody_dostepu", r.id), { sesjeWszystkie: increment(1) }));
+            await updateDoc(docRef, { status: "logowanie", sessionID: id, obecni: [], historia: [], rece: [], wnioski: [] });
+        };
+
+        window.koniecSesji = async () => { if(confirm("Zakończyć sesję?")) await updateDoc(docRef, { status: "reset_wszystkich" }); };
+        window.pokazBaze = () => { document.getElementById('welcomeScreen').classList.add('hidden'); document.getElementById('databaseView').classList.remove('hidden'); };
+        window.zalicz = async (id, sid) => { await updateDoc(doc(db, "kody_dostepu", id), { sesjeObecne: increment(1), lastSessionID: sid }); };
+        window.wypusc = async (n) => { await updateDoc(docRef, { obecni: arrayRemove(n) }); };
+        
+        window.dodajRadnego = () => {
+            const c = document.getElementById('rCode').value;
+            setDoc(doc(db, "kody_dostepu", c), {
+                imie: document.getElementById('rImie').value, nazwisko: document.getElementById('rNazwisko').value,
+                klasa: document.getElementById('rClass').value, komisja: document.getElementById('rComm').value,
+                stanowisko: document.getElementById('rPos').value, sesjeObecne: 0, sesjeWszystkie: 0, zalogowany: false, lastSessionID: ""
+            });
+            alert("Dodano!");
+        };
+        window.remR = (id) => { if(confirm("Usunąć?")) deleteDoc(doc(db, "kody_dostepu", id)); };
+        window.delH = (r) => updateDoc(docRef, { rece: arrayRemove(r) });
+        import { getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    </script>
+</body>
+</html>
