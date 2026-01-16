@@ -2,8 +2,8 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>@mperek. | Panel Administratora</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>@mperek. | Panel Administratora PRO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { --p: #4f46e5; --s: #10b981; --d: #ef4444; --dark: #0f172a; --bg: #f1f5f9; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
@@ -12,85 +12,105 @@
         #welcomeScreen { position: fixed; inset: 0; background: var(--dark); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .welcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; max-width: 800px; padding: 40px; }
         .welcome-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 40px; border-radius: 32px; text-align: center; cursor: pointer; transition: 0.3s; }
-        .welcome-card:hover { background: rgba(255,255,255,0.1); transform: translateY(-10px); border-color: var(--p); }
-        
-        /* LAYOUT */
+        .welcome-card:hover { background: rgba(255,255,255,0.1); transform: translateY(-10px); }
+
+        /* SIDEBAR */
         .sidebar { width: 340px; background: var(--dark); color: white; padding: 30px; display: flex; flex-direction: column; }
-        .main { flex: 1; padding: 40px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-        .card { background: white; border-radius: 24px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .main { flex: 1; padding: 40px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+        .card { background: white; border-radius: 24px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .full { grid-column: span 2; }
-        
-        .btn { padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 10px; font-family: inherit; }
+
+        /* KWORUM */
+        .quorum-container { background: #e2e8f0; height: 12px; border-radius: 100px; margin: 15px 0; overflow: hidden; }
+        #quorumBar { background: var(--s); height: 100%; width: 0%; transition: 0.5s; }
+
+        /* LISTY */
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: #f8fafc; border-radius: 16px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
+        .vote-tag { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; }
+        .tag-ZA { background: #dcfce7; color: #166534; }
+        .tag-PRZECIW { background: #fee2e2; color: #991b1b; }
+        .tag-WSTRZYMAŁO { background: #fef3c7; color: #92400e; }
+
+        /* UI */
+        .btn { padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%; font-family: inherit; margin-bottom: 8px; }
         .btn-p { background: var(--p); color: white; }
         .btn-s { background: var(--s); color: white; }
         .btn-d { background: var(--d); color: white; }
-        input { padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        input { padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
         
-        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 15px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 12px; font-size: 11px; color: #64748b; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
         .hidden { display: none !important; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; font-size: 11px; color: #64748b; border-bottom: 2px solid #f1f5f9; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div id="welcomeScreen">
-        <h1 style="font-size: 48px; letter-spacing: -3px; margin-bottom: 10px;">@mperek.</h1>
+        <h1 style="font-size: 54px; letter-spacing: -3px; margin-bottom: 10px;">@mperek.</h1>
         <div class="welcome-grid">
             <div class="welcome-card" onclick="nowaSesja()">
-                <div style="font-size: 50px;">🚀</div>
+                <div style="font-size: 50px;">🗳️</div>
                 <h2>Zacznij sesję</h2>
-                <p style="font-size: 14px; color: #94a3b8;">Uruchom system i listę obecności</p>
+                <p style="color: #94a3b8;">Zarządzaj głosowaniem i obecnością</p>
             </div>
             <div class="welcome-card" onclick="pokazBaze()">
                 <div style="font-size: 50px;">🗂️</div>
                 <h2>Radni (Baza)</h2>
-                <p style="font-size: 14px; color: #94a3b8;">Zarządzaj kodami i danymi</p>
+                <p style="color: #94a3b8;">Edytuj listę radnych i kody</p>
             </div>
         </div>
     </div>
 
-    <div class="sidebar">
-        <h2 style="letter-spacing:-2px; margin-top:0;">@mperek.</h2>
-        <div id="sideContent">
-            <input type="text" id="vTitle" placeholder="Temat głosowania...">
+    <div id="sidebar" class="sidebar hidden">
+        <h2 style="letter-spacing:-2px; margin: 0 0 30px 0;">@mperek.</h2>
+        
+        <div class="card" style="background: rgba(255,255,255,0.05); border: none; padding: 20px; color: white;">
+            <small style="color: #94a3b8; font-weight: 800;">STATUS KWORUM</small>
+            <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                <span id="quorumText">0/0</span>
+                <span id="quorumStatus" style="font-weight:800; color:var(--d);">BRAK</span>
+            </div>
+            <div class="quorum-container"><div id="quorumBar"></div></div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <input type="text" id="vTitle" placeholder="Temat głosowania..." style="background: rgba(255,255,255,0.1); border: 1px solid #334155; color: white;">
             <button id="vBtn" class="btn btn-s" onclick="toggleVote()">START GŁOSOWANIA</button>
-            <div id="results" style="background:rgba(255,255,255,0.05); padding:15px; border-radius:15px; font-size:14px; margin-top:10px;"></div>
-            <div style="margin-top: auto; padding-top: 40px;">
-                <button class="btn btn-d" onclick="koniecSesji()">KONIEC SESJI</button>
-            </div>
+            <div id="results" style="margin-top: 15px; font-size: 14px;"></div>
+        </div>
+
+        <button class="btn btn-d" style="margin-top: auto;" onclick="koniecSesji()">ZAKOŃCZ SESJĘ</button>
+    </div>
+
+    <div id="sessionView" class="main hidden">
+        <div class="card">
+            <h3>👥 Lista Obecności i Głosy</h3>
+            <div id="presenceList"></div>
+        </div>
+        <div class="card">
+            <h3>🖐 Kolejka i 📝 Wnioski</h3>
+            <div id="handList" style="margin-bottom: 20px;"></div>
+            <div id="wnioskiList"></div>
         </div>
     </div>
 
-    <div class="main">
-        <div id="sessionModule" class="full" style="display: contents;">
-            <div class="card">
-                <h3>👥 Obecni i Wyjścia</h3>
-                <div id="presenceList"></div>
+    <div id="databaseView" class="main hidden" style="grid-template-columns: 1fr;">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0;">🗂 Zarządzanie Radnymi</h2>
+                <button class="btn btn-d" style="width:auto; padding:10px 20px;" onclick="location.reload()">POWRÓT</button>
             </div>
-            <div class="card">
-                <h3>🖐 Kolejka i 📝 Wnioski</h3>
-                <div id="handList"></div>
-                <div id="wnioskiList" style="margin-top:20px;"></div>
+            <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px;">
+                <input type="text" id="rCode" placeholder="KOD">
+                <input type="text" id="rName" placeholder="NAZWISKO">
+                <input type="text" id="rClass" placeholder="KLASA">
+                <input type="text" id="rComm" placeholder="KOMISJA">
+                <input type="text" id="rPos" placeholder="STANOWISKO">
             </div>
-        </div>
-
-        <div id="databaseModule" class="card full hidden">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>🗂 Baza Radnych</h3>
-                <button onclick="zamknijBaze()" style="background:none; border:none; cursor:pointer; color:var(--d); font-weight:800;">ZAMKNIJ X</button>
-            </div>
-            <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; margin-bottom:15px;">
-                <input type="text" id="rCode" placeholder="Kod">
-                <input type="text" id="rName" placeholder="Nazwisko">
-                <input type="text" id="rClass" placeholder="Klasa">
-                <input type="text" id="rComm" placeholder="Komisja">
-                <input type="text" id="rPos" placeholder="Stanowisko">
-            </div>
-            <button class="btn btn-p" onclick="dodajRadnego()">DODAJ RADNEGO</button>
-            <table>
-                <thead><tr><th>KOD</th><th>NAZWISKO</th><th>FREKWENCJA</th><th>AKCJA</th></tr></thead>
+            <button class="btn btn-p" onclick="dodajRadnego()">DODAJ RADNEGO DO SYSTEMU</button>
+            <table style="margin-top:20px;">
+                <thead><tr><th>KOD</th><th>NAZWISKO</th><th>KLASA</th><th>FREKWENCJA</th><th>AKCJA</th></tr></thead>
                 <tbody id="radniTable"></tbody>
             </table>
         </div>
@@ -98,96 +118,117 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc, collection, getDocs, deleteDoc, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, collection, getDocs, deleteDoc, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
-        onSnapshot(docRef, async s => {
-            const d = s.data();
+        let totalRadniCount = 0;
+
+        // Monitoring Sesji
+        onSnapshot(docRef, async snap => {
+            const d = snap.data();
             if(!d) return;
 
             if(d.status === "reset_wszystkich") {
                 document.getElementById('welcomeScreen').classList.remove('hidden');
+                document.getElementById('sidebar').classList.add('hidden');
+                document.getElementById('sessionView').classList.add('hidden');
             } else {
                 document.getElementById('welcomeScreen').classList.add('hidden');
+                document.getElementById('sidebar').classList.remove('hidden');
+                document.getElementById('sessionView').classList.remove('hidden');
             }
 
-            document.getElementById('vBtn').innerText = d.status === "otwarte" ? "ZAMKNIJ GŁOSOWANIE" : "START GŁOSOWANIA";
-            
-            if(d.wyniki) {
-                document.getElementById('results').innerHTML = `
-                    <p>ZA: <b>${d.wyniki.ZA}</b> | PRZECIW: <b>${d.wyniki.PRZECIW}</b> | WSTRZ: <b>${d.wyniki["WSTRZYMAŁO SIĘ"]}</b></p>
-                `;
-            }
+            // Kworum logic
+            const obecniCount = d.obecni ? d.obecni.length : 0;
+            const quorumMin = Math.floor(totalRadniCount / 2) + 1;
+            document.getElementById('quorumText').innerText = `${obecniCount} / ${totalRadniCount}`;
+            const perc = (obecniCount / totalRadniCount) * 100;
+            document.getElementById('quorumBar').style.width = perc + "%";
+            const qStatus = document.getElementById('quorumStatus');
+            if(obecniCount >= quorumMin) { qStatus.innerText = "JEST"; qStatus.style.color = "var(--s)"; }
+            else { qStatus.innerText = "BRAK"; qStatus.style.color = "var(--d)"; }
 
-            const radni = await getDocs(collection(db, "kody_dostepu"));
+            // Głosy i Obecność
+            document.getElementById('vBtn').innerText = d.status === "otwarte" ? "STOP" : "START GŁOSOWANIA";
+            const radniSnap = await getDocs(collection(db, "kody_dostepu"));
             const presDiv = document.getElementById('presenceList'); presDiv.innerHTML = "";
             
-            (d.obecni || []).forEach(nazwisko => {
-                let rData = null; let rID = null;
-                radni.forEach(rs => { if(rs.data().nazwisko === nazwisko) { rData = rs.data(); rID = rs.id; }});
-                const zaliczone = rData && rData.lastSessionID === d.sessionID;
-                const chceWyjsc = d.prośby_wyjscie && d.prośby_wyjscie.includes(nazwisko);
+            (d.obecni || []).forEach(nazwa => {
+                let rID = ""; let rData = null;
+                radniSnap.forEach(r => { if(r.data().nazwisko === nazwa) { rID = r.id; rData = r.data(); }});
+                
+                const glos = d.lista_glosow ? d.lista_glosow[nazwa.replace(/[.#$/[\]]/g, "")] : null;
+                const zaliczony = rData && rData.lastSessionID === d.sessionID;
+                const chceWyjsc = d.prośby_wyjscie && d.prośby_wyjscie.includes(nazwa);
 
                 presDiv.innerHTML += `
                     <div class="user-row">
-                        <span>${nazwisko} ${chceWyjsc ? '⚠️' : ''}</span>
-                        <div>
-                            ${!zaliczone ? `<button onclick="window.zalicz('${rID}', '${d.sessionID}')" class="btn-s" style="width:auto; padding:5px;">ZALICZ</button>` : '✅'}
-                            ${chceWyjsc ? `<button onclick="window.wypusc('${nazwisko}')" class="btn-d" style="width:auto; padding:5px;">WYPUŚĆ</button>` : ''}
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-weight:700;">${nazwa}</span>
+                            ${glos ? `<span class="vote-tag tag-${glos.substring(0,5)}">${glos}</span>` : ''}
+                        </div>
+                        <div style="display:flex; gap:5px;">
+                            ${!zaliczony ? `<button onclick="window.zalicz('${rID}', '${d.sessionID}')" class="btn-s" style="padding:5px 10px; width:auto; margin:0;">ZALICZ</button>` : '✅'}
+                            ${chceWyjsc ? `<button onclick="window.wypusc('${nazwa}')" class="btn-d" style="padding:5px 10px; width:auto; margin:0;">WYPUŚĆ</button>` : ''}
                         </div>
                     </div>`;
             });
 
-            document.getElementById('handList').innerHTML = (d.rece || []).map(r => `<div class="user-row"><span>🖐 ${r}</span><button onclick="window.delH('${r}')">OK</button></div>`).join('');
-            document.getElementById('wnioskiList').innerHTML = (d.wnioski || []).map(w => `<div style="font-size:12px; margin-bottom:5px;"><b>${w.radny}:</b> ${w.tresc}</div>`).join('');
+            // Wyniki zbiorcze
+            if(d.wyniki) {
+                document.getElementById('results').innerHTML = `
+                    <b style="color:var(--s)">ZA: ${d.wyniki.ZA}</b> | 
+                    <b style="color:var(--d)">PRZECIW: ${d.wyniki.PRZECIW}</b> | 
+                    <b style="color:#f59e0b">WSTRZ: ${d.wyniki["WSTRZYMAŁO SIĘ"]}</b>
+                `;
+            }
+
+            document.getElementById('handList').innerHTML = (d.rece || []).map(r => `<div class="user-row"><span>🖐 ${r}</span><button onclick="window.delH('${r}')" class="btn-p" style="width:auto; padding:5px; margin:0;">OK</button></div>`).join('');
+            document.getElementById('wnioskiList').innerHTML = (d.wnioski || []).map(w => `<div class="card" style="padding:10px; font-size:12px; margin-bottom:5px;"><b>${w.radny}:</b> ${w.tresc}</div>`).join('');
         });
 
+        // Monitoring Bazy
         onSnapshot(collection(db, "kody_dostepu"), s => {
+            totalRadniCount = s.size;
             const tbody = document.getElementById('radniTable'); tbody.innerHTML = "";
             s.forEach(d => {
                 const r = d.data();
                 const f = r.sesjeWszystkie > 0 ? Math.round((r.sesjeObecne/r.sesjeWszystkie)*100) : 100;
-                tbody.innerHTML += `<tr><td>${d.id}</td><td>${r.nazwisko}</td><td>${f}%</td><td><button onclick="window.remR('${d.id}')">X</button></td></tr>`;
+                tbody.innerHTML += `<tr><td><b>${d.id}</b></td><td>${r.nazwisko}</td><td>${r.klasa}</td><td>${f}%</td><td><button onclick="window.remR('${d.id}')" style="color:var(--d); border:none; background:none; cursor:pointer;">USUŃ</button></td></tr>`;
             });
         });
 
         window.pokazBaze = () => {
             document.getElementById('welcomeScreen').classList.add('hidden');
-            document.getElementById('databaseModule').classList.remove('hidden');
-        };
-
-        window.zamknijBaze = () => {
-            getDoc(docRef).then(s => {
-                if(s.data().status === "reset_wszystkich") document.getElementById('welcomeScreen').classList.remove('hidden');
-                document.getElementById('databaseModule').classList.add('hidden');
-            });
+            document.getElementById('databaseView').classList.remove('hidden');
         };
 
         window.nowaSesja = async () => {
             const newID = Date.now().toString();
-            const radni = await getDocs(collection(db, "kody_dostepu"));
-            radni.forEach(r => updateDoc(doc(db, "kody_dostepu", r.id), { sesjeWszystkie: increment(1) }));
+            const rs = await getDocs(collection(db, "kody_dostepu"));
+            rs.forEach(r => updateDoc(doc(db, "kody_dostepu", r.id), { sesjeWszystkie: increment(1) }));
             await updateDoc(docRef, { status: "logowanie", sessionID: newID, obecni: [], prośby_wyjscie: [], rece: [], wnioski: [], wyniki: {ZA:0, PRZECIW:0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} });
         };
 
         window.koniecSesji = async () => {
-            if(confirm("Zakończyć sesję? Radni wrócą do profili.")) {
+            if(confirm("Czy na pewno zakończyć i rozliczyć sesję?")) {
                 await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], prośby_wyjscie: [] });
             }
         };
 
         window.toggleVote = async () => {
-            const s = await getDoc(docRef);
-            if(s.data().status === "otwarte") await updateDoc(docRef, { status: "zamkniete" });
+            const s = await getDocs(collection(db, "ankiet"));
+            const d = s.docs[0].data();
+            if(d.status === "otwarte") await updateDoc(docRef, { status: "zamkniete" });
             else await updateDoc(docRef, { status: "otwarte", tytul: document.getElementById('vTitle').value || "Głosowanie", wyniki: {ZA:0, PRZECIW:0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} });
         };
 
         window.zalicz = async (id, sID) => { await updateDoc(doc(db, "kody_dostepu", id), { sesjeObecne: increment(1), lastSessionID: sID }); };
-        window.wypusc = async (nazwisko) => { await updateDoc(docRef, { obecni: arrayRemove(nazwisko), prośby_wyjscie: arrayRemove(nazwisko) }); };
+        window.wypusc = async (nazwa) => { await updateDoc(docRef, { obecni: arrayRemove(nazwa), prośby_wyjscie: arrayRemove(nazwa) }); };
         window.dodajRadnego = () => {
             const c = document.getElementById('rCode').value;
             setDoc(doc(db, "kody_dostepu", c), {
@@ -195,8 +236,9 @@
                 komisja: document.getElementById('rComm').value, stanowisko: document.getElementById('rPos').value,
                 sesjeObecne: 0, sesjeWszystkie: 0, zalogowany: false, lastSessionID: ""
             });
+            alert("Dodano radnego.");
         };
-        window.remR = (id) => deleteDoc(doc(db, "kody_dostepu", id));
+        window.remR = (id) => { if(confirm("Usunąć?")) deleteDoc(doc(db, "kody_dostepu", id)); };
         window.delH = (r) => updateDoc(docRef, { rece: arrayRemove(r) });
     </script>
 </body>
