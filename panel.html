@@ -2,27 +2,25 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>@mperek. | Panel Administratora V4</title>
+    <title>@mperek. | Panel Administratora V5</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { --p: #4f46e5; --s: #10b981; --d: #ef4444; --dark: #0f172a; --bg: #f1f5f9; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* EKRAN STARTOWY */
         #welcomeScreen { position: fixed; inset: 0; background: var(--dark); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .welcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; max-width: 800px; padding: 40px; }
         .welcome-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 40px; border-radius: 32px; text-align: center; cursor: pointer; transition: 0.3s; }
         .welcome-card:hover { background: rgba(255,255,255,0.1); transform: translateY(-10px); }
 
-        /* SIDEBAR */
         .sidebar { width: 340px; background: var(--dark); color: white; padding: 30px; display: flex; flex-direction: column; overflow-y: auto; }
         .main { flex: 1; padding: 40px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
         .card { background: white; border-radius: 24px; padding: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         .full { grid-column: span 2; }
 
-        /* UI ELEMENTS */
         .quorum-container { background: #e2e8f0; height: 12px; border-radius: 100px; margin: 15px 0; overflow: hidden; }
         #quorumBar { background: var(--s); height: 100%; width: 0%; transition: 0.5s; }
+        
         .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: #f8fafc; border-radius: 16px; margin-bottom: 8px; border: 1px solid #e2e8f0; }
         .btn { padding: 14px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 100%; font-family: inherit; margin-bottom: 8px; }
         .btn-p { background: var(--p); color: white; }
@@ -30,17 +28,13 @@
         .btn-d { background: var(--d); color: white; }
         input, select { padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; width: 100%; margin-bottom: 10px; box-sizing: border-box; font-family: inherit; }
         
-        /* HISTORIA */
-        .history-item { background: #1e293b; padding: 15px; border-radius: 12px; margin-top: 10px; font-size: 13px; border-left: 4px solid var(--p); }
-        .history-item b { color: var(--s); }
-
+        .history-item { background: #1e293b; padding: 15px; border-radius: 12px; margin-top: 10px; font-size: 13px; border-left: 4px solid var(--p); line-height: 1.5; }
+        .tag { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; }
+        .tag-VOTE { background: #dcfce7; color: #166534; }
         .hidden { display: none !important; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px; font-size: 11px; color: #64748b; border-bottom: 2px solid #f1f5f9; }
         td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-        .tag { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; }
-        .tag-ZA { background: #dcfce7; color: #166534; }
-        .tag-PRZE { background: #fee2e2; color: #991b1b; }
     </style>
 </head>
 <body>
@@ -76,15 +70,18 @@
         <div id="voteControls">
             <small style="color: #94a3b8; font-weight: 800;">USTAWIENIA GŁOSOWANIA</small>
             <input type="text" id="vTitle" placeholder="Temat punktu obrad...">
-            <select id="vType">
+            <select id="vType" onchange="toggleCustomOptions(this.value)">
                 <option value="standard">Tryb: ZA / PRZECIW / WSTRZ.</option>
-                <option value="imienne">Tryb: NA NAZWISKA (Wybór osoby)</option>
+                <option value="imienne">Tryb: NA NAZWISKA (Opcje)</option>
             </select>
+            <div id="customOptionsArea" class="hidden">
+                <input type="text" id="vOptions" placeholder="Kandydaci po przecinku...">
+            </div>
             <button id="vBtn" class="btn btn-s" onclick="toggleVote()">START GŁOSOWANIA</button>
         </div>
 
         <div style="margin-top: 20px;">
-            <small style="color: #94a3b8; font-weight: 800;">HISTORIA TEJ SESJI</small>
+            <small style="color: #94a3b8; font-weight: 800;">HISTORIA SESJI</small>
             <div id="voteHistory"></div>
         </div>
 
@@ -127,7 +124,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, collection, getDocs, deleteDoc, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc, collection, getDocs, deleteDoc, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
         const app = initializeApp(firebaseConfig);
@@ -136,12 +133,10 @@
 
         let totalRadni = 0;
 
-        // Monitorowanie danych sesji
         onSnapshot(docRef, async snap => {
             const d = snap.data();
             if(!d) return;
 
-            // Logika ekranów
             if(d.status === "reset_wszystkich") {
                 document.getElementById('welcomeScreen').classList.remove('hidden');
                 document.getElementById('sidebar').classList.add('hidden');
@@ -152,45 +147,36 @@
                 document.getElementById('sessionView').classList.remove('hidden');
             }
 
-            // Kworum
             const obecni = d.obecni ? d.obecni.length : 0;
             const min = Math.floor(totalRadni / 2) + 1;
             document.getElementById('quorumText').innerText = `${obecni} / ${totalRadni}`;
-            document.getElementById('quorumBar').style.width = (obecni/totalRadni)*100 + "%";
-            document.getElementById('quorumStatus').innerText = obecni >= min ? "KWORM OK" : "BRAK KWORUM";
+            document.getElementById('quorumBar').style.width = (totalRadni > 0 ? (obecni/totalRadni)*100 : 0) + "%";
+            document.getElementById('quorumStatus').innerText = obecni >= min ? "KWORUM OK" : "BRAK KWORUM";
             document.getElementById('quorumStatus').style.color = obecni >= min ? "var(--s)" : "var(--d)";
 
-            // Historia i wyniki
             document.getElementById('vBtn').innerText = d.status === "otwarte" ? "ZAMKNIJ I ZAPISZ" : "START GŁOSOWANIA";
             
-            const histDiv = document.getElementById('voteHistory');
-            histDiv.innerHTML = (d.historia || []).reverse().map(h => `
+            document.getElementById('voteHistory').innerHTML = (d.historia || []).slice().reverse().map(h => `
                 <div class="history-item">
-                    <b>${h.tytul}</b><br>
-                    <small>${h.wynik}</small>
+                    <b>${h.tytul}</b><br><small>${h.wynik} (${h.czas})</small>
                 </div>
             `).join('');
 
-            // Lista obecnych + głosy w czasie rzeczywistym
             const rSnap = await getDocs(collection(db, "kody_dostepu"));
             const presDiv = document.getElementById('presenceList'); presDiv.innerHTML = "";
             
             (d.obecni || []).forEach(name => {
-                let rID = ""; let rFull = "";
-                rSnap.forEach(r => { if((r.data().imie + " " + r.data().nazwisko) === name) { rID = r.id; rFull = r.data(); }});
-                
+                let rID = ""; let rData = null;
+                rSnap.forEach(r => { if((r.data().imie + " " + r.data().nazwisko) === name) { rID = r.id; rData = r.data(); }});
                 const glos = d.lista_glosow ? d.lista_glosow[name.replace(/\s/g, "_")] : null;
-                const zaliczony = rFull && rFull.lastSessionID === d.sessionID;
+                const zaliczony = rData && rData.lastSessionID === d.sessionID;
 
                 presDiv.innerHTML += `
                     <div class="user-row">
-                        <div>
-                            <b>${name}</b> 
-                            ${glos ? `<span class="tag tag-ZA" style="margin-left:10px">${glos}</span>` : ''}
-                        </div>
+                        <div><b>${name}</b> ${glos ? `<span class="tag tag-VOTE" style="margin-left:10px">${glos}</span>` : ''}</div>
                         <div style="display:flex; gap:10px;">
-                            ${!zaliczony ? `<button onclick="window.zalicz('${rID}', '${d.sessionID}')" class="btn-s" style="padding:5px 10px; width:auto; margin:0;">OBECNY</button>` : '✅'}
-                            <button onclick="window.wypusc('${name}')" class="btn-d" style="padding:5px 10px; width:auto; margin:0;">WYRZUĆ</button>
+                            ${!zaliczony ? `<button onclick="window.zalicz('${rID}', '${d.sessionID}')" class="btn-s" style="padding:5px 10px; width:auto; margin:0;">ZALICZ</button>` : '✅'}
+                            <button onclick="window.wypusc('${name}')" class="btn-d" style="padding:5px 10px; width:auto; margin:0;">USUŃ</button>
                         </div>
                     </div>`;
             });
@@ -199,7 +185,6 @@
             document.getElementById('wnioskiList').innerHTML = (d.wnioski || []).map(w => `<div class="card" style="padding:10px; margin-bottom:5px; font-size:12px;"><b>${w.radny}:</b> ${w.tresc}</div>`).join('');
         });
 
-        // Monitorowanie Bazy
         onSnapshot(collection(db, "kody_dostepu"), s => {
             totalRadni = s.size;
             const tbody = document.getElementById('radniTable'); tbody.innerHTML = "";
@@ -210,49 +195,37 @@
             });
         });
 
-        window.toggleVote = async () => {
-            const snap = await getDoc(docRef);
-            const d = snap.data();
-            const tytul = document.getElementById('vTitle').value || "Głosowanie bez tytułu";
-            const typ = document.getElementById('vType').value;
+        window.toggleCustomOptions = (val) => {
+            document.getElementById('customOptionsArea').classList[val === 'imienne' ? 'remove' : 'add']('hidden');
+        };
 
+        window.toggleVote = async () => {
+            const s = await getDoc(docRef);
+            const d = s.data();
             if(d.status === "otwarte") {
-                // ZAMYKANIE: Generowanie wyniku do historii
-                let wynikTxt = "";
-                if(d.typ === "standard") {
-                    wynikTxt = `ZA: ${d.wyniki.ZA} | PRZECIW: ${d.wyniki.PRZECIW} | WSTRZ: ${d.wyniki["WSTRZYMAŁO SIĘ"]}`;
-                } else {
-                    wynikTxt = "Głosowanie Imienne zakończone";
-                }
-                
-                await updateDoc(docRef, { 
-                    status: "zamkniete",
-                    historia: arrayUnion({ tytul: d.tytul, wynik: wynikTxt, czas: new Date().toLocaleTimeString() })
-                });
+                let res = d.typ === "standard" ? `ZA: ${d.wyniki.ZA} | PRZECIW: ${d.wyniki.PRZECIW} | WSTRZ: ${d.wyniki["WSTRZYMAŁO SIĘ"]}` : "Zakończono głosowanie opcjonalne";
+                await updateDoc(docRef, { status: "zamkniete", historia: arrayUnion({ tytul: d.tytul, wynik: res, czas: new Date().toLocaleTimeString() }) });
             } else {
-                // OTWIERANIE
+                const typ = document.getElementById('vType').value;
+                const opts = typ === 'imienne' ? document.getElementById('vOptions').value.split(',').map(x => x.trim()).filter(x => x) : [];
                 await updateDoc(docRef, { 
-                    status: "otwarte", 
-                    tytul: tytul, 
-                    typ: typ,
-                    wyniki: {ZA:0, PRZECIW:0, "WSTRZYMAŁO SIĘ":0}, 
-                    lista_glosow: {} 
+                    status: "otwarte", tytul: document.getElementById('vTitle').value || "Głosowanie", 
+                    typ, opcjeGlosowania: opts, wyniki: {ZA:0, PRZECIW:0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} 
                 });
             }
         };
 
         window.nowaSesja = async () => {
-            const id = Date.now().toString();
+            const sid = Date.now().toString();
             const rs = await getDocs(collection(db, "kody_dostepu"));
             rs.forEach(r => updateDoc(doc(db, "kody_dostepu", r.id), { sesjeWszystkie: increment(1) }));
-            await updateDoc(docRef, { status: "logowanie", sessionID: id, obecni: [], historia: [], rece: [], wnioski: [] });
+            await updateDoc(docRef, { status: "logowanie", sessionID: sid, obecni: [], historia: [], rece: [], wnioski: [], lista_glosow: {} });
         };
 
-        window.koniecSesji = async () => { if(confirm("Zakończyć sesję?")) await updateDoc(docRef, { status: "reset_wszystkich" }); };
+        window.koniecSesji = async () => { if(confirm("Zakończyć?")) await updateDoc(docRef, { status: "reset_wszystkich" }); };
         window.pokazBaze = () => { document.getElementById('welcomeScreen').classList.add('hidden'); document.getElementById('databaseView').classList.remove('hidden'); };
         window.zalicz = async (id, sid) => { await updateDoc(doc(db, "kody_dostepu", id), { sesjeObecne: increment(1), lastSessionID: sid }); };
         window.wypusc = async (n) => { await updateDoc(docRef, { obecni: arrayRemove(n) }); };
-        
         window.dodajRadnego = () => {
             const c = document.getElementById('rCode').value;
             setDoc(doc(db, "kody_dostepu", c), {
@@ -260,11 +233,9 @@
                 klasa: document.getElementById('rClass').value, komisja: document.getElementById('rComm').value,
                 stanowisko: document.getElementById('rPos').value, sesjeObecne: 0, sesjeWszystkie: 0, zalogowany: false, lastSessionID: ""
             });
-            alert("Dodano!");
         };
         window.remR = (id) => { if(confirm("Usunąć?")) deleteDoc(doc(db, "kody_dostepu", id)); };
         window.delH = (r) => updateDoc(docRef, { rece: arrayRemove(r) });
-        import { getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
     </script>
 </body>
 </html>
