@@ -3,76 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal Radnego @mperek</title>
+    <title>Strefa Radnego @mperek</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #f4f7f6; padding: 15px; margin: 0; color: #333; }
-        .vote-container { max-width: 450px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: left; }
-        .user-info { font-size: 13px; color: #777; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; display: flex; justify-content: space-between; }
+        :root { --primary: #2980b9; --success: #27ae60; --purple: #9b59b6; --dark: #2c3e50; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 400px; }
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: left; }
         
-        /* Kworum */
-        #kworumWrapper { margin-bottom: 15px; }
-        .kworum-label { font-size: 11px; margin-bottom: 4px; display: flex; justify-content: space-between; font-weight: bold; }
-        #kworumProgress { width: 100%; background: #eee; height: 10px; border-radius: 5px; overflow: hidden; }
-        #kworumBar { width: 0%; height: 100%; background: #e67e22; transition: 0.5s; }
+        /* Legitymacja */
+        .id-card { background: linear-gradient(135deg, var(--dark), #34495e); color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; position: relative; overflow: hidden; }
+        .id-card h2 { margin: 5px 0; font-size: 22px; }
+        .id-card small { opacity: 0.7; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; }
+        .id-card .icon { position: absolute; right: -10px; bottom: -10px; font-size: 80px; opacity: 0.1; }
 
-        /* Status kolejki */
-        #queueStatus { background: #ebf5fb; border: 1px solid #3498db; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 13px; display: none; }
-        
-        .btn { display: block; width: 100%; padding: 18px; margin: 10px 0; font-size: 1.1rem; border: none; border-radius: 10px; cursor: pointer; color: white; font-weight: bold; }
-        .btn-za { background: #27ae60; } .btn-przeciw { background: #c0392b; } .btn-wstrzymuje { background: #f1c40f; color: #000; }
-        
-        .request-area { margin-top: 20px; border-top: 2px solid #eee; padding-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-req { padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; }
-        .btn-hand { background: #3498db; color: white; }
-        .btn-down { background: #95a5a6; color: white; }
-        .btn-wniosek { background: #9b59b6; color: white; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-box { background: #fff; padding: 15px; border-radius: 15px; border: 1px solid #eee; text-align: center; }
+        .stat-val { display: block; font-size: 20px; font-weight: bold; }
 
-        /* MODAL DLA WNIOSKU */
-        #modalWniosek { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
-        .modal-content { background: white; padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; text-align: left; }
-        .modal-content textarea { width: 100%; height: 100px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; font-family: inherit; }
+        /* Paski i Statusy */
+        .progress-bg { background: #eee; height: 8px; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+        .progress-bar { height: 100%; width: 0%; transition: 0.5s; background: var(--primary); }
+        .queue-box { background: #ebf5fb; padding: 12px; border-radius: 10px; margin-bottom: 15px; display: none; font-size: 13px; }
+
+        /* Przyciski */
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; margin: 5px 0; }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-enter { background: var(--success); color: white; padding: 20px; font-size: 16px; }
+        .btn-za { background: var(--success); color: white; font-size: 18px; }
+        .btn-przeciw { background: #e74c3c; color: white; font-size: 18px; }
+        .btn-wstrzymuje { background: #f1c40f; color: black; font-size: 18px; }
+
+        /* Modal */
+        #modalWniosek { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 350px; border-top: 6px solid var(--purple); }
+        textarea { width: 100%; height: 100px; border: 1px solid #ddd; border-radius: 10px; padding: 10px; margin: 10px 0; resize: none; font-family: inherit; box-sizing: border-box; }
     </style>
 </head>
 <body>
-    <div id="loginArea" style="padding:50px;">
-        <h1>@mperek.</h1>
-        <input type="text" id="accessCode" placeholder="Kod dostępu" style="padding:15px; width:200px; border-radius:8px; border:1px solid #ccc;"><br><br>
-        <button onclick="zaloguj()" style="padding:15px 30px; background:#2980b9; color:white; border:none; border-radius:8px; font-weight:bold;">ZALOGUJ SIĘ</button>
+    <div class="container">
+        <div id="loginArea" class="card" style="text-align: center; margin-top: 50px;">
+            <h1>@mperek.</h1>
+            <p>Wprowadź kod dostępu do strefy radnego</p>
+            <input type="text" id="accessCode" placeholder="KOD" style="width: 100%; padding: 15px; text-align: center; font-size: 20px; border-radius: 10px; border: 1px solid #ccc; box-sizing: border-box;">
+            <button class="btn btn-main" onclick="zaloguj()" style="margin-top: 15px;">ZALOGUJ SIĘ</button>
+        </div>
+
+        <div id="profileArea" style="display:none;">
+            <div class="id-card">
+                <small>Legitymacja Radnego RSU</small>
+                <h2 id="profileName">-</h2>
+                <div class="icon">🏛</div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-box"><span class="stat-val" style="color:var(--success)">100%</span><small>OBECNOŚĆ</small></div>
+                <div class="stat-box"><span class="stat-val" style="color:var(--purple)" id="statWnioski">0</span><small>WNIOSKI</small></div>
+            </div>
+            <button class="btn btn-enter" onclick="checkSession()">WEJDŹ NA SESJĘ ▶</button>
+            <button class="btn" style="background: none; color: #7f8c8d; font-size: 12px;" onclick="wyloguj()">Wyloguj z urządzenia</button>
+        </div>
+
+        <div id="voteArea" class="card" style="display:none;">
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #777; margin-bottom: 10px;">
+                <span id="sessionUser"></span>
+                <span id="kworumStatus"></span>
+            </div>
+            <div class="progress-bg"><div id="kworumBar" class="progress-bar"></div></div>
+            <div id="queueStatus" class="queue-box"></div>
+            <h2 id="title" style="text-align: center; font-size: 18px; margin: 20px 0;">Oczekiwanie...</h2>
+            <div id="btns"></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                <button id="handBtn" class="btn" style="background:#3498db; color:white;" onclick="toggleHand()">PODNIEŚ RĘKĘ</button>
+                <button class="btn" style="background:var(--purple); color:white;" onclick="openModal()">WNIOSKI</button>
+            </div>
+        </div>
     </div>
 
-    <div id="voteArea" class="vote-container" style="display:none;">
-        <div class="user-info"><span>Zalogowany: <b id="userNameDisplay"></b></span></div>
-        <div id="kworumWrapper">
-            <div class="kworum-label"><span>Status kworum:</span> <span id="kworumText">0/0</span></div>
-            <div id="kworumProgress"><div id="kworumBar"></div></div>
-        </div>
-        <div id="queueStatus"></div>
-        <h2 id="title" style="font-size:18px; text-align:center;">Czekaj na start...</h2>
-        <div id="btns"></div>
-        <div class="request-area">
-            <button id="handBtn" class="btn-req btn-hand" onclick="toggleHand()">PODNIEŚ RĘKĘ</button>
-            <button class="btn-req btn-wniosek" onclick="openModal()">ZGŁOŚ WNIOSEK</button>
-        </div>
-        <p id="msg" style="font-size:13px; text-align:center; color:#888; margin-top: 15px;"></p>
-    </div>
-
-    <div id="modalWniosek">
-    <div class="modal-content" style="border-top: 5px solid #9b59b6;">
-        <h3 style="margin:0; color: #333;">Nowy wniosek formalny</h3>
-        <p style="font-size: 11px; color: #777; margin: 5px 0;">Wpisz treść, która zostanie wyświetlona prowadzącemu.</p>
-        
-        <textarea id="trescWniosku" placeholder="Np. Wniosek o przerwie w obradach..."></textarea>
-        
-        <div style="display:flex; flex-direction: column; gap:10px;">
-            <button onclick="wyslijWniosek()" style="padding:15px; background:#9b59b6; color:white; border:none; border-radius:10px; font-weight:bold; font-size: 14px; cursor:pointer; box-shadow: 0 4px 0 #7d4593; transition: 0.1s;" onmousedown="this.style.transform='translateY(2px)'; this.style.boxShadow='0 2px 0 #7d4593'" onmouseup="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 0 #7d4593'">
-                ZATWIERDŹ I WYŚLIJ 📩
-            </button>
-            <button onclick="closeModal()" style="padding:10px; background:none; border: 1px solid #ccc; color: #777; border-radius:10px; cursor:pointer; font-size: 12px;">
-                Anuluj
-            </button>
-        </div>
-    </div>
-</div>
+    <div id="modalWniosek"><div class="modal-content">
+        <h3 style="margin:0">Nowy wniosek</h3>
+        <textarea id="trescWniosku" placeholder="Wpisz treść..."></textarea>
+        <button class="btn" style="background:var(--purple); color:white;" onclick="wyslijWniosek()">ZATWIERDŹ I WYŚLIJ 📩</button>
+        <button class="btn" style="background:#eee;" onclick="closeModal()">Anuluj</button>
+    </div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -82,93 +93,103 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
-        let userFullInfo = localStorage.getItem("zalogowanyRadny");
 
-        if (userFullInfo) { document.getElementById('loginArea').style.display = "none"; document.getElementById('voteArea').style.display = "block"; startApp(); }
+        let currentName = localStorage.getItem("radnyName");
+        let currentCode = localStorage.getItem("radnyCode");
+
+        if(currentName) { showArea('profileArea'); document.getElementById('profileName').innerText = currentName; }
 
         window.zaloguj = async () => {
             const code = document.getElementById('accessCode').value.trim();
-            const cSnap = await getDoc(doc(db, "kody_dostepu", code));
-            if(!cSnap.exists()) return alert("Błędny kod!");
-            userFullInfo = cSnap.data().nazwisko;
-            localStorage.setItem("zalogowanyRadny", userFullInfo);
-            await updateDoc(docRef, { obecni: arrayUnion(userFullInfo) });
+            const snap = await getDoc(doc(db, "kody_dostepu", code));
+            if(!snap.exists()) return alert("Błędny kod!");
+            localStorage.setItem("radnyName", snap.data().nazwisko);
+            localStorage.setItem("radnyCode", code);
             location.reload();
         };
 
-        window.openModal = () => document.getElementById('modalWniosek').style.display = "flex";
-        window.closeModal = () => document.getElementById('modalWniosek').style.display = "none";
+        window.wyloguj = () => { localStorage.clear(); location.reload(); };
 
-        window.wyslijWniosek = async () => {
-            const tresc = document.getElementById('trescWniosku').value.trim();
-            if(!tresc) return alert("Wpisz treść!");
-            await updateDoc(docRef, { wnioski: arrayUnion({ radny: userFullInfo, tresc: tresc, czas: new Date().toLocaleTimeString('pl-PL', {hour:'2-digit', minute:'2-digit'}) }) });
-            document.getElementById('trescWniosku').value = "";
-            closeModal();
-            alert("Wniosek wysłany.");
+        window.checkSession = async () => {
+            const snap = await getDoc(docRef);
+            const status = snap.data().status;
+            if(status === "reset_wszystkich" || status === "zamkniete") return alert("Sesja nie jest aktywna.");
+            
+            const v = prompt("Wpisz kod ponownie dla weryfikacji:");
+            if(v !== currentCode) return alert("Błędny kod!");
+            
+            await updateDoc(docRef, { obecni: arrayUnion(currentName) });
+            showArea('voteArea');
+            startSessionSync();
         };
 
-        window.toggleHand = async () => {
-            const s = await getDoc(docRef);
-            const wKolejce = (s.data().rece || []).includes(userFullInfo);
-            if(wKolejce) await updateDoc(docRef, { rece: arrayRemove(userFullInfo) });
-            else await updateDoc(docRef, { rece: arrayUnion(userFullInfo) });
-        };
+        function showArea(id) {
+            ['loginArea', 'profileArea', 'voteArea'].forEach(a => document.getElementById(a).style.display = a === id ? 'block' : 'none');
+        }
 
-        async function startApp() {
-            document.getElementById('userNameDisplay').innerText = userFullInfo;
-            const kodySnap = await getDocs(collection(db, "kody_dostepu"));
-            const l_max = kodySnap.size;
-
-            onSnapshot(docRef, (snap) => {
-                const data = snap.data(); if(!data) return;
-                
-                // Kworum
-                const l_ob = data.obecni?.length || 0;
-                const wym = Math.floor(l_max / 2) + 1;
-                document.getElementById('kworumBar').style.width = (l_ob/l_max*100) + "%";
-                document.getElementById('kworumText').innerText = `${l_ob}/${l_max}`;
-                document.getElementById('kworumBar').style.background = l_ob >= wym ? "#27ae60" : "#e67e22";
-
-                // Kolejka (Logika Twoja Kolej)
-                const rece = data.rece || [];
-                const mojaPoz = rece.indexOf(userFullInfo);
-                const qStatus = document.getElementById('queueStatus');
-                const hBtn = document.getElementById('handBtn');
-
-                if(mojaPoz !== -1) {
-                    hBtn.innerText = "OPUŚĆ RĘKĘ"; hBtn.className = "btn-req btn-down";
-                    qStatus.style.display = "block";
-                    if(mojaPoz === 0) {
-                        qStatus.innerHTML = "<b>⭐ TWOJA KOLEJ!</b> Zaraz otrzymasz głos.";
-                        qStatus.style.background = "#d4efdf"; qStatus.style.color = "#145a32";
-                    } else {
-                        qStatus.innerHTML = `Pozycja w kolejce: <b>${mojaPoz + 1}</b><br><small>Przed Tobą: ${mojaPoz} os.</small>`;
-                        qStatus.style.background = "#ebf5fb"; qStatus.style.color = "#2980b9";
-                    }
-                } else {
-                    hBtn.innerText = "PODNIEŚ RĘKĘ"; hBtn.className = "btn-req btn-hand";
-                    qStatus.style.display = "none";
+        function startSessionSync() {
+            onSnapshot(docRef, async (snap) => {
+                const data = snap.data();
+                if(data.status === "reset_wszystkich" || data.status === "zamkniete") {
+                    alert("Sesja zakończona.");
+                    location.reload(); 
+                    return;
                 }
+
+                // Kworum
+                const kodySnap = await getDocs(collection(db, "kody_dostepu"));
+                const l_max = kodySnap.size;
+                const l_ob = data.obecni?.length || 0;
+                document.getElementById('kworumBar').style.width = (l_ob/l_max*100) + "%";
+                document.getElementById('kworumStatus').innerText = `Obecność: ${l_ob}/${l_max}`;
+                document.getElementById('kworumBar').style.background = l_ob >= Math.floor(l_max/2)+1 ? "#27ae60" : "#e67e22";
+
+                // Kolejka
+                const rece = data.rece || [];
+                const mojaPoz = rece.indexOf(currentName);
+                const qBox = document.getElementById('queueStatus');
+                const hBtn = document.getElementById('handBtn');
+                
+                if(mojaPoz !== -1) {
+                    qBox.style.display = 'block';
+                    hBtn.innerText = "OPUŚĆ RĘKĘ";
+                    if(mojaPoz === 0) { qBox.innerHTML = "<b>⭐ TWOJA KOLEJ!</b>"; qBox.style.background = "#d4efdf"; }
+                    else { qBox.innerHTML = `Pozycja w kolejce: <b>${mojaPoz + 1}</b>`; qBox.style.background = "#ebf5fb"; }
+                } else { qBox.style.display = 'none'; hBtn.innerText = "PODNIEŚ RĘKĘ"; }
 
                 // Głosowanie
                 const div = document.getElementById('btns');
-                const titleEl = document.getElementById('title');
-                if(data.status !== "otwarte") { titleEl.innerText = "SESJA RADY"; div.innerHTML = ""; return; }
-                titleEl.innerText = data.tytul;
-                const safe = userFullInfo.replace(/[.#$/[\]]/g, "");
+                const title = document.getElementById('title');
+                if(data.status !== "otwarte") { title.innerText = "SESJA RADY"; div.innerHTML = ""; return; }
+                
+                title.innerText = data.tytul;
+                const safe = currentName.replace(/[.#$/[\]]/g, "");
                 const juz = data.lista_glosow && data.lista_glosow[safe];
                 div.innerHTML = "";
-                ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].forEach(key => {
+                ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"].forEach(k => {
                     const b = document.createElement('button');
-                    b.innerText = key; b.className = "btn " + (key==="ZA"?"btn-za":key==="PRZECIW"?"btn-przeciw":"btn-wstrzymuje");
+                    b.innerText = k; b.className = "btn " + (k==="ZA"?"btn-za":k==="PRZECIW"?"btn-przeciw":"btn-wstrzymuje");
                     if(juz) b.disabled = true;
-                    b.onclick = async () => { if(confirm("Na pewno?")) await updateDoc(docRef, { [`wyniki.${key}`]: increment(1), [`lista_glosow.${safe}`]: key }); };
+                    b.onclick = async () => { if(confirm("Na pewno?")) await updateDoc(docRef, { [`wyniki.${k}`]: increment(1), [`lista_glosow.${safe}`]: k }); };
                     div.appendChild(b);
                 });
             });
         }
+
+        window.toggleHand = async () => {
+            const s = await getDoc(docRef);
+            if((s.data().rece || []).includes(currentName)) await updateDoc(docRef, { rece: arrayRemove(currentName) });
+            else await updateDoc(docRef, { rece: arrayUnion(currentName) });
+        };
+
+        window.openModal = () => document.getElementById('modalWniosek').style.display = 'flex';
+        window.closeModal = () => document.getElementById('modalWniosek').style.display = 'none';
+        window.wyslijWniosek = async () => {
+            const t = document.getElementById('trescWniosku').value;
+            if(!t) return;
+            await updateDoc(docRef, { wnioski: arrayUnion({ radny: currentName, tresc: t, czas: new Date().toLocaleTimeString() }) });
+            closeModal(); document.getElementById('trescWniosku').value = ""; alert("Wysłano.");
+        };
     </script>
 </body>
 </html>
-
