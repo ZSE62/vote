@@ -10,82 +10,83 @@
         }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* Ekran startowy */
         #start-screen { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--bg); z-index: 1000; }
         
-        /* Układ główny */
-        .sidebar { width: 380px; background: white; border-right: 1px solid #ddd; padding: 20px; display: none; flex-direction: column; overflow-y: auto; }
-        .main { flex: 1; padding: 20px; display: none; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 20px; overflow-y: auto; }
+        .sidebar { width: 350px; background: white; border-right: 1px solid #ddd; padding: 20px; display: none; flex-direction: column; overflow-y: auto; }
+        .main { flex: 1; padding: 20px; display: none; flex-direction: column; gap: 20px; overflow-y: auto; }
         
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
-        .scroll-area { flex: 1; overflow-y: auto; margin-top: 10px; border: 1px solid #f0f0f0; border-radius: 5px; padding: 5px; }
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 10px; }
+        .scroll-area { max-height: 250px; overflow-y: auto; margin-top: 10px; border: 1px solid #f0f0f0; border-radius: 5px; padding: 5px; }
         
-        h3 { margin: 0 0 10px 0; font-size: 16px; color: var(--dark); border-bottom: 2px solid #eee; padding-bottom: 5px; display: flex; justify-content: space-between; }
+        h3 { margin: 0 0 10px 0; font-size: 16px; color: var(--dark); border-bottom: 2px solid #eee; padding-bottom: 5px; }
         
-        input, select { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box; }
+        input { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box; }
         
         button { padding: 10px; margin: 5px 0; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        button:hover { opacity: 0.8; }
         .btn-blue { background: var(--primary); color: white; width: 100%; }
         .btn-green { background: var(--success); color: white; width: 100%; }
         .btn-red { background: var(--danger); color: white; width: 100%; }
         .btn-purple { background: var(--purple); color: white; width: 100%; }
         
-        /* Listy */
+        /* Sekcja Bazy Radnych (Ukryta) */
+        #bazaToggleBtn { background: #ecf0f1; color: var(--dark); border: 1px solid #bdc3c7; }
+        #bazaContent { display: none; margin-top: 10px; padding: 10px; border-top: 1px solid #eee; }
+
+        #kworumBox { background: #eee; border-radius: 4px; height: 10px; margin: 10px 0; overflow: hidden; }
+        #kworumBar { width: 0%; height: 100%; background: #e67e22; transition: 0.5s; }
+
         .item { padding: 8px; border-bottom: 1px solid #eee; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
         .wniosek-item { background: #fdf2ff; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid var(--purple); font-size: 13px; }
-        .del-btn { background: #fee; color: var(--danger); border: 1px solid #fcc; padding: 2px 6px; font-size: 10px; cursor: pointer; }
+        .del-btn { background: #fee; color: var(--danger); border: 1px solid #fcc; padding: 2px 6px; font-size: 10px; }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
         <h1 style="font-size: 60px; margin: 0;">@mperek.</h1>
-        <p style="color: #777; margin-bottom: 30px;">System Obsługi Głosowań RSU ZSE</p>
+        <p style="color: #777; margin-bottom: 30px;">Panel Sterowania Sesją ZSE</p>
         <button class="btn-green" style="width: 300px; padding: 20px;" onclick="otworzSesje()">ROZPOCZNIJ NOWĄ SESJĘ</button>
     </div>
 
     <div class="sidebar" id="sidebar">
         <div class="card">
-            <h3>Sterowanie Głosowaniem</h3>
-            <input type="text" id="tytul" placeholder="Temat uchwały / punkt obrad">
+            <h3>Głosowanie</h3>
+            <input type="text" id="tytul" placeholder="Temat głosowania...">
             <button id="actionBtn" class="btn-green" onclick="toggleVote()">START GŁOSOWANIA</button>
         </div>
 
-        <div class="card" style="margin-top: 20px;">
-            <h3>🖐 Kolejka do głosu (Ręce)</h3>
-            <div id="receList" class="scroll-area" style="min-height: 150px;"></div>
-            <button class="btn-blue" style="font-size: 11px;" onclick="czyscRece()">OPUŚĆ WSZYSTKIE RĘCE</button>
+        <div class="card">
+            <h3>🖐 Do głosu (Ręce)</h3>
+            <div id="receList" class="scroll-area"></div>
+            <button class="btn-blue" style="font-size: 10px;" onclick="czyscRece()">OPUŚĆ WSZYSTKIE RĘCE</button>
         </div>
 
-        <div class="card" style="margin-top: 20px; flex: 1;">
-            <h3>Historia tej sesji</h3>
-            <div id="historia" class="scroll-area"></div>
-        </div>
-
-        <button class="btn-red" onclick="zakonczSesje()">ZAMKNIJ SESJĘ & RAPORT</button>
+        <button class="btn-red" onclick="zakonczSesje()" style="margin-top: auto;">ZAMKNIJ SYSTEM</button>
     </div>
 
     <div class="main" id="main">
         <div class="card">
-            <h3>Obecni (Kworum: <span id="qStatus">?</span>)</h3>
+            <h3>Obecność i Kworum: <span id="qStatus">?</span></h3>
+            <div id="kworumBox"><div id="kworumBar"></div></div>
             <div class="scroll-area"><div id="listObecni"></div></div>
         </div>
 
         <div class="card">
-            <h3>📝 Zgłoszone Wnioski</h3>
-            <div class="scroll-area"><div id="listWnioski"></div></div>
-            <button class="btn-purple" style="font-size: 11px;" onclick="czyscWnioski()">WYCZYŚĆ LISTĘ WNIOSKÓW</button>
+            <h3>📝 Wnioski Radnych</h3>
+            <div id="listWnioski" class="scroll-area"></div>
+            <button class="btn-purple" style="font-size: 10px;" onclick="czyscWnioski()">WYCZYŚĆ LISTĘ</button>
         </div>
 
-        <div class="card" style="grid-column: span 2;">
-            <h3>Baza Radnych (Edycja Składu)</h3>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="newCode" placeholder="Kod" style="flex: 1;">
-                <input type="text" id="newName" placeholder="Imię i Nazwisko" style="flex: 2;">
-                <button class="btn-blue" style="width: 120px;" onclick="dodajRadnego()">DODAJ</button>
+        <div class="card">
+            <button id="bazaToggleBtn" onclick="toggleBazaView()">⚙ ZARZĄDZAJ BAZĄ RADNYCH ▼</button>
+            <div id="bazaContent">
+                <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                    <input type="text" id="newCode" placeholder="Kod" style="flex: 1;">
+                    <input type="text" id="newName" placeholder="Imię i Nazwisko" style="flex: 2;">
+                    <button class="btn-blue" style="width: 80px;" onclick="dodajRadnego()">DODAJ</button>
+                </div>
+                <div class="scroll-area" id="listBaza"></div>
             </div>
-            <div class="scroll-area"><div id="listBaza"></div></div>
         </div>
     </div>
 
@@ -104,16 +105,27 @@
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
-        // --- OBSŁUGA DANYCH NA ŻYWO ---
+        // Funkcja rozwijania bazy
+        window.toggleBazaView = () => {
+            const content = document.getElementById('bazaContent');
+            const btn = document.getElementById('bazaToggleBtn');
+            if (content.style.display === "block") {
+                content.style.display = "none";
+                btn.innerText = "⚙ ZARZĄDZAJ BAZĄ RADNYCH ▼";
+            } else {
+                content.style.display = "block";
+                btn.innerText = "⚙ ZARZĄDZAJ BAZĄ RADNYCH ▲";
+            }
+        };
+
         onSnapshot(docRef, async (snap) => {
             const data = snap.data(); if(!data) return;
             const isClosed = data.status === "reset_wszystkich";
 
             document.getElementById('start-screen').style.display = isClosed ? "flex" : "none";
             document.getElementById('sidebar').style.display = isClosed ? "none" : "flex";
-            document.getElementById('main').style.display = isClosed ? "none" : "grid";
+            document.getElementById('main').style.display = isClosed ? "none" : "flex";
 
-            // Akcja przycisku głosowania
             const actionBtn = document.getElementById('actionBtn');
             actionBtn.innerText = data.status === "otwarte" ? "ZAKOŃCZ GŁOSOWANIE" : "START GŁOSOWANIA";
             actionBtn.className = data.status === "otwarte" ? "btn-red" : "btn-green";
@@ -122,58 +134,31 @@
             const kodySnap = await getDocs(collection(db, "kody_dostepu"));
             const l_max = kodySnap.size;
             const l_ob = data.obecni?.length || 0;
+            const wym = Math.floor(l_max / 2) + 1;
+            
+            document.getElementById('kworumBar').style.width = (l_max > 0 ? (l_ob / l_max) * 100 : 0) + "%";
             document.getElementById('qStatus').innerText = `${l_ob}/${l_max}`;
+            document.getElementById('kworumBar').style.background = l_ob >= wym ? "#27ae60" : "#e67e22";
 
-            // Lista Obecnych
-            const listOb = document.getElementById('listObecni');
-            listOb.innerHTML = "";
-            (data.obecni || []).forEach(n => {
-                listOb.innerHTML += `<div class="item">${n} <button class="del-btn" onclick="usunObecnego('${n}')">Wyloguj</button></div>`;
-            });
-
-            // Kolejka do głosu (Ręce)
-            const listR = document.getElementById('receList');
-            listR.innerHTML = "";
-            (data.rece || []).forEach((r, i) => {
-                listR.innerHTML += `<div class="item"><b>${i+1}. ${r}</b> <button onclick="usunReke('${r}')">Udzielono</button></div>`;
-            });
-
-            // Lista Wniosków
-            const listW = document.getElementById('listWnioski');
-            listW.innerHTML = "";
-            (data.wnioski || []).forEach(w => {
-                listW.innerHTML += `<div class="wniosek-item"><small>${w.czas} - <b>${w.radny}</b></small><br>${w.tresc}</div>`;
-            });
+            // Listy
+            document.getElementById('listObecni').innerHTML = (data.obecni || []).map(n => `<div class="item">${n} <button class="del-btn" onclick="usunObecnego('${n}')">Wyloguj</button></div>`).join('');
+            document.getElementById('receList').innerHTML = (data.rece || []).map((r, i) => `<div class="item"><b>${i+1}. ${r}</b> <button onclick="usunReke('${r}')">Głos</button></div>`).join('');
+            document.getElementById('listWnioski').innerHTML = (data.wnioski || []).map(w => `<div class="wniosek-item"><small>${w.czas} - <b>${w.radny}</b></small><br>${w.tresc}</div>`).join('');
         });
 
-        // Baza Radnych
         onSnapshot(collection(db, "kody_dostepu"), (s) => {
-            const listB = document.getElementById('listBaza');
-            listB.innerHTML = "";
+            document.getElementById('listBaza').innerHTML = "";
             s.forEach(d => {
-                listB.innerHTML += `<div class="item"><span><b>${d.id}</b> - ${d.data().nazwisko}</span> <button class="del-btn" onclick="usunZBazy('${d.id}')">Usuń</button></div>`;
+                document.getElementById('listBaza').innerHTML += `<div class="item"><span><b>${d.id}</b> ${d.data().nazwisko}</span><button class="del-btn" onclick="usunZBazy('${d.id}')">Usuń</button></div>`;
             });
         });
 
-        // Historia
-        onSnapshot(collection(db, "archiwum_sesji"), (s) => {
-            const h = document.getElementById('historia'); h.innerHTML = "";
-            s.forEach(d => {
-                const res = Object.entries(d.data().wyniki || {}).map(([k,v]) => `${k}:${v}`).join(' | ');
-                h.innerHTML += `<div style="font-size:11px; margin-bottom:5px; border-bottom:1px solid #eee;"><b>${d.data().tytul}</b><br>${res}</div>`;
-            });
-        });
-
-        // --- FUNKCJE PRZYCISKÓW ---
-        window.otworzSesje = async () => {
-            await updateDoc(docRef, { status: "logowanie", obecni: [], wyniki: {}, lista_glosow: {}, rece: [], wnioski: [], tytul: "Oczekiwanie" });
-        };
-
+        window.otworzSesje = async () => { await updateDoc(docRef, { status: "logowanie", obecni: [], wyniki: {}, lista_glosow: {}, rece: [], wnioski: [], tytul: "Sesja" }); };
+        
         window.toggleVote = async () => {
             const s = await getDoc(docRef);
             if(s.data().status === "otwarte") {
                 await updateDoc(docRef, { status: "zamkniete" });
-                await setDoc(doc(collection(db, "archiwum_sesji")), { ...s.data() });
             } else {
                 const t = document.getElementById('tytul').value || "Głosowanie";
                 await updateDoc(docRef, { tytul: t, status: "otwarte", wyniki: {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} });
@@ -181,30 +166,16 @@
         };
 
         window.usunReke = async (n) => { await updateDoc(docRef, { rece: arrayRemove(n) }); };
-        window.czyscRece = async () => { if(confirm("Opuścić wszystkim ręce?")) await updateDoc(docRef, { rece: [] }); };
-        window.czyscWnioski = async () => { if(confirm("Wyczyścić listę wniosków?")) await updateDoc(docRef, { wnioski: [] }); };
-        
+        window.czyscRece = async () => { if(confirm("Opuścić ręce?")) await updateDoc(docRef, { rece: [] }); };
+        window.czyscWnioski = async () => { if(confirm("Wyczyścić wnioski?")) await updateDoc(docRef, { wnioski: [] }); };
         window.dodajRadnego = async () => {
-            const c = document.getElementById('newCode').value;
-            const n = document.getElementById('newName').value;
-            if(c && n) { await setDoc(doc(db, "kody_dostepu", c), { nazwisko: n }); }
+            const c = document.getElementById('newCode').value; const n = document.getElementById('newName').value;
+            if(c && n) { await setDoc(doc(db, "kody_dostepu", c), { nazwisko: n }); document.getElementById('newCode').value=""; document.getElementById('newName').value=""; }
         };
-
-        window.usunZBazy = async (id) => { if(confirm("Usunąć radnego z systemu?")) await deleteDoc(doc(db, "kody_dostepu", id)); };
+        window.usunZBazy = async (id) => { if(confirm("Usuń radnego?")) await deleteDoc(doc(db, "kody_dostepu", id)); };
         window.usunObecnego = async (n) => { const s = await getDoc(docRef); await updateDoc(docRef, { obecni: s.data().obecni.filter(x => x !== n) }); };
-
         window.zakonczSesje = async () => {
-            if(!confirm("Zakończyć sesję i pobrać raport?")) return;
-            // Pobieranie raportu (uproszczone)
-            const q = await getDocs(collection(db, "archiwum_sesji"));
-            let txt = "RAPORT SESJI\n\n";
-            q.forEach(d => { txt += `UCHWAŁA: ${d.data().tytul}\nWYNIKI: ${JSON.stringify(d.data().wyniki)}\n\n`; });
-            const blob = new Blob([txt], {type: 'text/plain'});
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "raport.txt"; a.click();
-
-            // Reset
-            await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], rece: [], wnioski: [] });
-            q.forEach(async d => await deleteDoc(doc(db, "archiwum_sesji", d.id)));
+            if(confirm("Zakończyć sesję?")) await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], rece: [], wnioski: [] });
         };
     </script>
 </body>
