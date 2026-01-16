@@ -6,181 +6,208 @@
 <title>Portal Radnego | @mperek</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-:root { --primary: #4f46e5; --success: #10b981; --danger: #ef4444; --bg: #f8fafc; }
-body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin:0; padding:20px; display:flex; justify-content:center; }
-.container { width:100%; max-width:450px; }
-.card { background:white; padding:25px; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); margin-bottom:20px; }
-.id-card { background: linear-gradient(135deg, #4f46e5, #818cf8); color:white; padding:25px; border-radius:24px; cursor:pointer; margin-bottom:20px; box-shadow:0 15px 30px rgba(79,70,229,0.2); }
-.id-details { max-height:0; overflow:hidden; transition:0.5s; background: rgba(255,255,255,0.1); border-radius:15px; }
+:root { --primary:#4f46e5; --green:#10b981; --red:#ef4444; --bg:#f8fafc; --yellow:#f59e0b; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; margin:0; padding:0; background:var(--bg); display:flex; justify-content:center; }
+.container { width:100%; max-width:480px; padding:20px; }
+.card { background:white; border-radius:24px; padding:25px; margin-bottom:20px; box-shadow:0 10px 25px rgba(0,0,0,0.05); }
+.id-card { background:linear-gradient(135deg,var(--primary),#818cf8); color:white; padding:25px; border-radius:24px; cursor:pointer; margin-bottom:20px; box-shadow:0 15px 30px rgba(79,70,229,0.2); }
+.id-details { max-height:0; overflow:hidden; transition:0.5s; background:rgba(255,255,255,0.1); border-radius:15px; }
 .id-details.open { max-height:600px; margin-top:15px; padding:15px; }
 .btn { width:100%; padding:18px; border:none; border-radius:18px; font-weight:700; cursor:pointer; transition:0.2s; font-size:15px; margin-bottom:10px; font-family:inherit; }
-.btn-main { background: var(--primary); color:white; }
-.btn-success { background: var(--success); color:white; }
-.btn-danger { background: var(--danger); color:white; }
-.btn.selected { border:4px solid #f59e0b; transform: scale(1.02); }
+.btn-main { background:var(--primary); color:white; }
+.btn-za { background:var(--green); color:white; }
+.btn-przeciw { background:var(--red); color:white; }
+.btn.selected { border:4px solid var(--yellow); transform:scale(1.02); }
 .btn.not-selected { opacity:0.4; }
 #voiceAlert { display:none; background:#fbbf24; color:#000; padding:20px; border-radius:20px; text-align:center; font-weight:800; margin-bottom:15px; animation:pulse 1.5s infinite; }
-@keyframes pulse { 0%{transform:scale(1);}50%{transform:scale(1.03);}100%{transform:scale(1);} }
+@keyframes pulse {0%{transform:scale(1);}50%{transform:scale(1.03);}100%{transform:scale(1);}}
 .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; padding:20px; backdrop-filter: blur(5px); }
 .modal-content { background:white; padding:30px; border-radius:28px; width:100%; max-width:400px; }
-input { width:100%; padding:18px; border-radius:18px; border:2px solid #e2e8f0; text-align:center; font-family:inherit; box-sizing:border-box; }
+input { width:100%; padding:18px; border-radius:18px; border:2px solid #e2e8f0; text-align:center; box-sizing:border-box; font-family:inherit; }
 </style>
 </head>
 <body>
 <div class="container">
-
-<div id="loginArea" class="card" style="text-align:center; margin-top:50px;">
-    <h1 style="letter-spacing:-2px;">@mperek</h1>
+  <div id="loginArea" class="card" style="text-align:center; margin-top:50px;">
+    <h1>@mperek</h1>
     <input type="text" id="accessCode" placeholder="TWÓJ KOD">
-    <button class="btn btn-main" style="margin-top:20px;" onclick="zaloguj()">ZALOGUJ SIĘ</button>
-</div>
+    <button class="btn btn-main" onclick="zaloguj()">ZALOGUJ SIĘ</button>
+  </div>
 
-<div id="profileArea" style="display:none;">
+  <div id="profileArea" style="display:none;">
     <div class="id-card" onclick="toggleDetails()">
-        <div style="display:flex; justify-content:space-between;">
-            <div><h2 id="userNameDisplay" style="margin:0;">-</h2><p id="userPosDisplay" style="opacity:0.8; font-size:12px;"></p></div>
-            <button onclick="event.stopPropagation(); logout();" style="background:none; border:none; color:white; font-size:20px;">🚪</button>
+      <div style="display:flex; justify-content:space-between;">
+        <div>
+          <h2 id="userNameDisplay">-</h2>
+          <p id="userPosDisplay" style="opacity:0.8; font-size:12px;"></p>
         </div>
-        <div id="idDetails" class="id-details">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:center; margin-bottom:15px;">
-                <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:10px;">
-                    <small>FREKWENCJA</small><br><b id="userFreq">0%</b>
-                </div>
-                <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:10px;">
-                    <small>SESJE</small><br><b id="userSessions">0/0</b>
-                </div>
-            </div>
-            <p style="font-size:10px; opacity:0.7;">OSTATNIE WNIOSKI:</p>
-            <div id="userHistory" style="font-size:11px;"></div>
+        <button onclick="event.stopPropagation(); logout();" style="background:none; border:none; color:white; font-size:20px;">🚪</button>
+      </div>
+      <div id="idDetails" class="id-details">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:center; margin-bottom:15px;">
+          <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:10px;">
+            <small>FREKWENCJA</small><br><b id="userFreq">0%</b>
+          </div>
+          <div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:10px;">
+            <small>SESJE</small><br><b id="userSessions">0/0</b>
+          </div>
         </div>
+        <p style="font-size:10px; opacity:0.7;">OSTATNIE WNIOSKI:</p>
+        <div id="userHistory" style="font-size:11px;"></div>
+      </div>
     </div>
 
     <div class="card">
-        <button id="joinBtn" class="btn btn-main" onclick="wejdzDoPoczekalni()">DOŁĄCZ DO SESJI</button>
-        <p id="sessionInfo" style="text-align:center; font-size:11px; color:#94a3b8;"></p>
+      <button id="joinBtn" class="btn btn-main" onclick="wejdzDoPoczekalni()">DOŁĄCZ DO SESJI</button>
+      <p id="sessionInfo" style="text-align:center; font-size:11px; color:#94a3b8;"></p>
     </div>
-</div>
+  </div>
 
-<div id="voteArea" style="display:none;">
+  <div id="voteArea" style="display:none;">
     <div id="voiceAlert">
-        <div style="font-size:24px; margin-bottom:10px;">📣 MASZ GŁOS!</div>
-        <button class="btn" style="background:#000; color:#fff; margin:0;" onclick="zakonczWypowiedz()">ODDAJ GŁOS</button>
+      <div style="font-size:24px; margin-bottom:10px;">📣 MASZ GŁOS!</div>
+      <button class="btn" style="background:#000; color:#fff; margin:0;" onclick="zakonczWypowiedz()">ODDAJ GŁOS</button>
     </div>
     <div class="card">
-        <h2 id="vTitle" style="text-align:center; margin-bottom:25px;">-</h2>
-        <div id="btns"></div>
-        <div id="voteStatus" style="text-align:center; font-weight:800; color:var(--danger); margin-top:10px;"></div>
+      <h2 id="vTitle" style="text-align:center; margin-bottom:25px;">-</h2>
+      <div id="btns"></div>
+      <div id="voteStatus" style="text-align:center; font-weight:800; color:var(--red); margin-top:10px;"></div>
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <button id="handBtn" class="btn" style="background:#f1f5f9;" onclick="toggleHand()">🖐 RĘKA</button>
-        <button class="btn" style="background:#a855f7; color:white;" onclick="openWniosek()">📝 WNIOSEK</button>
+      <button id="handBtn" class="btn" style="background:#f1f5f9;" onclick="toggleHand()">🖐 RĘKA</button>
+      <button class="btn" style="background:#a855f7; color:white;" onclick="openWniosek()">📝 WNIOSEK</button>
     </div>
-</div>
+  </div>
 
-<div id="waitingArea" class="card" style="display:none; text-align:center;">
+  <div id="waitingArea" class="card" style="display:none; text-align:center;">
     <h3>Poczekalnia</h3>
     <p>Administrator weryfikuje Twoją obecność...</p>
-</div>
-
+  </div>
 </div>
 
 <div id="wniosekModal" class="modal">
-<div class="modal-content">
-<h3 style="margin-top:0">Zgłoś wniosek</h3>
-<input type="text" id="wniosekInput" placeholder="Tytuł wniosku...">
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
-    <button class="btn" style="background:#f1f5f9;" onclick="closeWniosek()">ANULUJ</button>
-    <button class="btn btn-main" onclick="sendWniosek()">WYŚLIJ</button>
-</div>
-</div>
+  <div class="modal-content">
+    <h3 style="margin-top:0">Zgłoś wniosek</h3>
+    <input type="text" id="wniosekInput" placeholder="Tytuł wniosku...">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
+      <button class="btn" style="background:#f1f5f9;" onclick="closeWniosek()">ANULUJ</button>
+      <button class="btn btn-main" onclick="sendWniosek()">WYŚLIJ</button>
+    </div>
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot, updateDoc, increment, getDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
-const firebaseConfig = { apiKey:"AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain:"votelive-f469d.firebaseapp.com", projectId:"votelive-f469d", appId:"1:959356764271:web:76f0284a0a1ce6e9874d9a" };
+const firebaseConfig = {
+  apiKey: "API_KEY",
+  authDomain: "votelive-f469d.firebaseapp.com",
+  projectId: "votelive-f469d",
+  appId: "APP_ID"
+};
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const docRef = doc(db,"ankiet","vote");
+const auth = getAuth(app);
 
-let myCode = localStorage.getItem("rCode");
 let myData = null;
+let myCode = localStorage.getItem("rCode");
 let isHandUp = false;
 
 if(myCode) init();
 
 async function init() {
-    const snap = await getDoc(doc(db,"kody_dostepu",myCode));
-    if(!snap.exists()) return;
-    myData = snap.data();
-    document.getElementById('loginArea').style.display="none";
-    document.getElementById('profileArea').style.display="block";
-    document.getElementById('userNameDisplay').innerText=myData.imie+" "+myData.nazwisko;
-    document.getElementById('userPosDisplay').innerText=myData.stanowisko||"Radny";
-    
-    const total=myData.sesjeWszystkie||0;
-    const attended=myData.sesjeObecne||0;
-    const perc = total>0?Math.round((attended/total)*100):100;
-    document.getElementById('userFreq').innerText=perc+"%";
-    document.getElementById('userSessions').innerText=attended+"/"+total;
-    document.getElementById('userHistory').innerHTML=(myData.wnioski||[]).slice(-3).map(w=>`<div>• ${w.tytul}</div>`).join('')||"Brak wniosków";
+  const tokenResp = await fetch(`https://us-central1-votelive-f469d.cloudfunctions.net/getCustomToken?code=${myCode}`);
+  const { token } = await tokenResp.json();
+  await signInWithCustomToken(auth, token);
 
-    onSnapshot(docRef,s=>{
-        const d=s.data(); if(!d) return;
-        const myStatus = d.statusy_radnych?d.statusy_radnych[myCode]:null;
-        const fullName=myData.imie+" "+myData.nazwisko;
-        document.getElementById('voiceAlert').style.display = d.activeSpeaker===fullName?"block":"none";
+  const snap = await getDoc(doc(db, "kody_dostepu", myCode));
+  if(!snap.exists()) return alert("Niepoprawny kod");
+  myData = snap.data();
 
-        if(myStatus==="zaakceptowany"){ document.getElementById('profileArea').style.display="none"; document.getElementById('waitingArea').style.display="none"; document.getElementById('voteArea').style.display="block"; syncGlosowanie(d);}
-        else if(myStatus==="oczekuje"){ document.getElementById('profileArea').style.display="none"; document.getElementById('waitingArea').style.display="block";}
-        else{ document.getElementById('voteArea').style.display="none"; document.getElementById('waitingArea').style.display="none"; document.getElementById('profileArea').style.display="block";}
+  document.getElementById('loginArea').style.display="none";
+  document.getElementById('profileArea').style.display="block";
+  document.getElementById('userNameDisplay').innerText = myData.imie+" "+myData.nazwisko;
+  document.getElementById('userPosDisplay').innerText = myData.stanowisko||"Radny";
 
-        document.getElementById('sessionInfo').innerText=d.status==="logowanie"?"Sesja aktywna":"Brak aktywnych obrad";
-        document.getElementById('joinBtn').disabled=d.status!=="logowanie";
-    });
+  const total = myData.sesjeWszystkie||0;
+  const attended = myData.sesjeObecne||0;
+  const perc = total>0 ? Math.round(attended/total*100):100;
+  document.getElementById('userFreq').innerText = perc+"%";
+  document.getElementById('userSessions').innerText = attended+"/"+total;
+  document.getElementById('userHistory').innerHTML = (myData.wnioski||[]).slice(-3).map(w=>`• ${w.tytul}`).join("<br>")||"Brak wniosków";
 
-    setInterval(()=>{ updateDoc(doc(db,"kody_dostepu",myCode),{ lastActive:Date.now(), isOnline:true }); },15000);
+  onSnapshot(doc(db,"ankiet","vote"), s=>{
+    const d=s.data(); if(!d) return;
+    const fullName = myData.imie+" "+myData.nazwisko;
+    document.getElementById('voiceAlert').style.display = d.activeSpeaker===fullName ? "block":"none";
+    const myStatus = d.statusy_radnych ? d.statusy_radnych[myCode]:null;
+    document.getElementById('profileArea').style.display = (myStatus==="zaakceptowany")?"none":"block";
+    document.getElementById('waitingArea').style.display = (myStatus==="oczekuje")?"block":"none";
+    document.getElementById('voteArea').style.display = (myStatus==="zaakceptowany")?"block":"none";
+    document.getElementById('sessionInfo').innerText = d.status==="logowanie"?"Sesja aktywna":"Brak aktywnych obrad";
+    document.getElementById('joinBtn').disabled = d.status!=="logowanie";
+    syncGlosowanie(d);
+  });
 }
 
-window.zaloguj=async()=>{
-    const c=document.getElementById('accessCode').value.trim();
-    if(!c) return;
-    const snap = await getDoc(doc(db,"kody_dostepu",c));
-    if(snap.exists()){ localStorage.setItem("rCode",c); location.reload(); }
+window.zaloguj = async () => {
+  const c=document.getElementById('accessCode').value.trim();
+  if(!c) return;
+  localStorage.setItem("rCode", c);
+  location.reload();
 };
 
-window.zakonczWypowiedz=async()=>{ await updateDoc(docRef,{ activeSpeaker:"" }); };
-window.logout=async()=>{ if(myCode) await updateDoc(doc(db,"kody_dostepu",myCode),{ isOnline:false }); localStorage.clear(); location.reload(); };
-window.toggleDetails=()=>document.getElementById('idDetails').classList.toggle('open');
+window.toggleDetails = ()=>document.getElementById('idDetails').classList.toggle('open');
 window.openWniosek=()=>document.getElementById('wniosekModal').style.display="flex";
 window.closeWniosek=()=>document.getElementById('wniosekModal').style.display="none";
 
-window.wejdzDoPoczekalni=async()=>{ await updateDoc(docRef,{ [`poczekalnia_lista.${myCode}`]: { nazwa: myData.imie+" "+myData.nazwisko, czas: new Date().toLocaleTimeString() } }); };
-window.sendWniosek=async()=>{ const t=document.getElementById('wniosekInput').value.trim(); if(!t) return; const w={ tytul:t, radny: myData.imie+" "+myData.nazwisko, czas: new Date().toLocaleTimeString() }; await updateDoc(docRef,{wnioski:arrayUnion(w)}); await updateDoc(doc(db,"kody_dostepu",myCode),{wnioski:arrayUnion(w)}); closeWniosek(); document.getElementById('wniosekInput').value="";};
+window.wejdzDoPoczekalni=async ()=>{
+  await updateDoc(doc(db,"ankiet","vote"), { [`poczekalnia_lista.${myCode}`]: { nazwa: myData.imie+" "+myData.nazwisko, czas:new Date().toLocaleTimeString() } });
+};
+
+window.sendWniosek=async ()=>{
+  const t=document.getElementById('wniosekInput').value.trim();
+  if(!t) return;
+  const w={tytul:t, radny:myData.imie+" "+myData.nazwisko, czas:new Date().toLocaleTimeString()};
+  await updateDoc(doc(db,"ankiet","vote"), { wnioski: arrayUnion(w) });
+  await updateDoc(doc(db,"kody_dostepu",myCode), { wnioski: arrayUnion(w) });
+  closeWniosek(); document.getElementById('wniosekInput').value="";
+};
+
+window.toggleHand=async ()=>{
+  const name=myData.imie+" "+myData.nazwisko;
+  isHandUp?await updateDoc(doc(db,"ankiet","vote"), { rece: arrayRemove(name) }) : await updateDoc(doc(db,"ankiet","vote"), { rece: arrayUnion(name) });
+  isHandUp=!isHandUp;
+  document.getElementById('handBtn').innerText = isHandUp?"❌ OPUŚĆ":"🖐 RĘKA";
+};
+
+window.zakonczWypowiedz=async ()=>await updateDoc(doc(db,"ankiet","vote"),{activeSpeaker:""});
+
+window.logout=async ()=>{
+  if(myCode) await updateDoc(doc(db,"kody_dostepu",myCode), { isOnline:false });
+  localStorage.clear(); location.reload();
+};
 
 function syncGlosowanie(d){
-    const div=document.getElementById('btns'); const statusDiv=document.getElementById('voteStatus');
-    div.innerHTML="";
-    if(d.status==="otwarte"){
-        statusDiv.innerText="";
-        document.getElementById('vTitle').innerText=d.tytul;
-        const juz=d.lista_glosow&&d.lista_glosow[myCode];
-        d.opcjeGlosowania.forEach(o=>{
-            const b=document.createElement('button'); b.innerText=o; b.className=`btn ${o=='ZA'?'btn-success':o=='PRZECIW'?'btn-danger':'btn-main'}`;
-            if(juz){ b.disabled=true; b.className+=(juz===o)?" selected":" not-selected"; }
-            b.onclick=()=>updateDoc(docRef,{ [`wyniki.${o}`]:increment(1), [`lista_glosow.${myCode}`]:o });
-            div.appendChild(b);
-        });
-    } else { document.getElementById('vTitle').innerText="Oczekiwanie..."; statusDiv.innerText="Głosowanie nieaktywne"; }
+  const div=document.getElementById('btns');
+  const statusDiv=document.getElementById('voteStatus');
+  div.innerHTML="";
+  if(d.status==="otwarte"){
+    statusDiv.innerText="";
+    document.getElementById('vTitle').innerText=d.tytul;
+    const juz=d.lista_glosow && d.lista_glosow[myCode];
+    d.opcjeGlosowania.forEach(o=>{
+      const b=document.createElement('button');
+      b.innerText=o;
+      b.className=`btn ${o==="ZA"?"btn-za":o==="PRZECIW"?"btn-przeciw":"btn-main"}`;
+      if(juz){ b.disabled=true; b.className += (juz===o)?" selected":" not-selected"; }
+      b.onclick=()=>updateDoc(doc(db,"ankiet","vote"), { [`wyniki.${o}`]:increment(1), [`lista_glosow.${myCode}`]:o });
+      div.appendChild(b);
+    });
+  } else { document.getElementById('vTitle').innerText="Oczekiwanie..."; statusDiv.innerText="Głosowanie nieaktywne"; }
 }
-
-window.toggleHand=async()=>{
-    const name=myData.imie+" "+myData.nazwisko;
-    isHandUp?await updateDoc(docRef,{ rece:arrayRemove(name) }):await updateDoc(docRef,{ rece:arrayUnion(name) });
-    isHandUp=!isHandUp;
-    document.getElementById('handBtn').innerText=isHandUp?"❌ OPUŚĆ":"🖐 RĘKA";
-};
 </script>
 </body>
 </html>
