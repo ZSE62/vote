@@ -1,102 +1,48 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <title>System obrad</title>
-    <style>
-        body {
-            font-family: "Times New Roman", Times, serif;
-            background: white;
-            color: black;
-            padding: 40px;
-            display: flex;
-            justify-content: center;
-        }
-        .monitor { width: 850px; }
-        .header {
-            font-size: 46px;
-            text-align: center;
-            text-transform: uppercase;
-            font-weight: bold;
-            margin-bottom: 60px;
-        }
-        .row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 62px;
-            font-weight: bold;
-            margin-bottom: 25px;
-            text-transform: uppercase;
-        }
-        .msg {
-            font-size: 58px;
-            text-align: center;
-            margin-top: 100px;
-            font-weight: bold;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>System @mperek</title>
+<style>
+body { font-family: "Times New Roman", Times, serif; background: white; color: black; padding:40px; display:flex; justify-content:center; }
+.monitor { width:850px; }
+.header { font-size:46px; text-align:center; text-transform:uppercase; font-weight:bold; margin-bottom:60px; }
+.row { display:flex; justify-content:space-between; font-size:62px; font-weight:bold; margin-bottom:25px; text-transform:uppercase; }
+.msg { font-size:58px; text-align:center; margin-top:100px; font-weight:bold; }
+</style>
 </head>
 <body>
-
-<div class="monitor" id="main"></div>
-
+<div class="monitor" id="main-container"></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM",
-    authDomain: "votelive-f469d.firebaseapp.com",
-    projectId: "votelive-f469d",
-    appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a"
-};
-
+const firebaseConfig = { apiKey:"API_KEY", authDomain:"votelive-f469d.firebaseapp.com", projectId:"votelive-f469d", appId:"APP_ID" };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const ref = doc(db, "ankiet", "vote");
+const docRef = doc(db,"ankiet","vote");
 
-const container = document.getElementById("main");
+onSnapshot(docRef,snap=>{
+  const data=snap.data(); if(!data) return;
+  const container=document.getElementById('main-container');
 
-onSnapshot(ref, snap => {
-    const d = snap.data();
-    if (!d) return;
+  if(data.status==="reset_wszystkich"){ container.innerHTML=`<div class="msg">SESJA ZAMKNIĘTA</div>`; return; }
+  if(data.status==="otwarte"){ container.innerHTML=`<div class="header">${data.tytul.toUpperCase()}</div><div class="msg">GŁOSOWANIE W TOKU...</div>`; return; }
 
-    if (d.status === "idle" || d.status === "registering") {
-        container.innerHTML = `<div class="msg">SESJA W TOKU</div>`;
-        return;
-    }
+  let keys=Object.keys(data.wyniki||{});
+  const order=["ZA","PRZECIW","WSTRZYMAŁO SIĘ"];
+  keys.sort((a,b)=>{ let idxA=order.indexOf(a),idxB=order.indexOf(b); return (idxA===-1?99:idxA)-(idxB===-1?99:idxB); });
 
-    if (d.status === "voting") {
-        container.innerHTML = `
-            <div class="header">${(d.tytul || "").toUpperCase()}</div>
-            <div class="msg">GŁOSOWANIE W TOKU...</div>
-        `;
-        return;
-    }
+  let suma=0, rowsHTML="";
+  keys.forEach(k=>{ suma+=data.wyniki[k]; rowsHTML+=`<div class="row"><span>${k}</span><span>${data.wyniki[k]}</span></div>`; });
 
-    if (d.status === "closed") {
-        const order = ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"];
-        const wyniki = d.wyniki || {};
-
-        let suma = 0;
-        let rows = "";
-
-        order.forEach(k => {
-            if (wyniki[k] !== undefined) {
-                suma += wyniki[k];
-                rows += `<div class="row"><span>${k}</span><span>${wyniki[k]}</span></div>`;
-            }
-        });
-
-        container.innerHTML = `
-            <div class="header">${(d.tytul || "").toUpperCase()}</div>
-            <div class="row"><span>GŁOSOWAŁO</span><span>${suma}</span></div>
-            <div style="height:50px"></div>
-            ${rows}
-        `;
-    }
+  container.innerHTML=`
+    <div class="header">${data.tytul.toUpperCase()}</div>
+    <div class="row"><span>GŁOSOWAŁO</span><span>${suma}</span></div>
+    <div style="height:50px"></div>
+    ${rowsHTML}
+  `;
 });
 </script>
-
 </body>
 </html>
