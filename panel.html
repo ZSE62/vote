@@ -2,181 +2,104 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Admin @mperek - Zarządzanie Sesją</title>
+    <title>Panel Admin @mperek</title>
     <style>
-        :root { 
-            --primary: #2980b9; --success: #27ae60; --danger: #e74c3c; 
-            --dark: #2c3e50; --purple: #8e44ad; --bg: #f4f7f6; 
-        }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
-        #start-screen { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: var(--bg); z-index: 1000; }
-        
-        .sidebar { width: 350px; background: white; border-right: 1px solid #ddd; padding: 20px; display: none; flex-direction: column; overflow-y: auto; }
-        .main { flex: 1; padding: 20px; display: none; flex-direction: column; gap: 20px; overflow-y: auto; }
-        
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 10px; }
-        .scroll-area { max-height: 250px; overflow-y: auto; margin-top: 10px; border: 1px solid #f0f0f0; border-radius: 5px; padding: 5px; }
-        
-        h3 { margin: 0 0 10px 0; font-size: 16px; color: var(--dark); border-bottom: 2px solid #eee; padding-bottom: 5px; }
-        
-        input { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box; }
-        
-        button { padding: 10px; margin: 5px 0; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-blue { background: var(--primary); color: white; width: 100%; }
-        .btn-green { background: var(--success); color: white; width: 100%; }
-        .btn-red { background: var(--danger); color: white; width: 100%; }
-        .btn-purple { background: var(--purple); color: white; width: 100%; }
-        
-        /* Sekcja Bazy Radnych (Ukryta) */
-        #bazaToggleBtn { background: #ecf0f1; color: var(--dark); border: 1px solid #bdc3c7; }
-        #bazaContent { display: none; margin-top: 10px; padding: 10px; border-top: 1px solid #eee; }
-
-        #kworumBox { background: #eee; border-radius: 4px; height: 10px; margin: 10px 0; overflow: hidden; }
-        #kworumBar { width: 0%; height: 100%; background: #e67e22; transition: 0.5s; }
-
-        .item { padding: 8px; border-bottom: 1px solid #eee; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
-        .wniosek-item { background: #fdf2ff; padding: 10px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid var(--purple); font-size: 13px; }
-        .del-btn { background: #fee; color: var(--danger); border: 1px solid #fcc; padding: 2px 6px; font-size: 10px; }
+        :root { --primary: #2980b9; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; }
+        .sidebar { width: 350px; background: white; border-right: 1px solid #ddd; padding: 20px; display: flex; flex-direction: column; }
+        .main { flex: 1; padding: 20px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .scroll { height: 200px; overflow-y: auto; border: 1px solid #eee; margin-top: 10px; border-radius: 8px; }
+        .item { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 13px; }
+        .btn { padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin: 5px 0; }
+        .btn-green { background: var(--success); color: white; }
+        .btn-red { background: var(--danger); color: white; }
+        #kworumBar { height: 10px; background: #eee; border-radius: 5px; overflow: hidden; margin: 10px 0; }
+        #kworumFill { height: 100%; width: 0%; transition: 0.5s; background: var(--success); }
     </style>
 </head>
 <body>
-
-    <div id="start-screen">
-        <h1 style="font-size: 60px; margin: 0;">@mperek.</h1>
-        <p style="color: #777; margin-bottom: 30px;">Panel Sterowania Sesją ZSE</p>
-        <button class="btn-green" style="width: 300px; padding: 20px;" onclick="otworzSesje()">ROZPOCZNIJ NOWĄ SESJĘ</button>
+    <div id="start" style="position:fixed; inset:0; background:var(--bg); z-index:100; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <h1>@mperek.</h1>
+        <button class="btn btn-green" style="width:300px; padding:20px;" onclick="otworzSesje()">ROZPOCZNIJ NOWĄ SESJĘ</button>
     </div>
 
-    <div class="sidebar" id="sidebar">
+    <div class="sidebar">
         <div class="card">
             <h3>Głosowanie</h3>
-            <input type="text" id="tytul" placeholder="Temat głosowania...">
-            <button id="actionBtn" class="btn-green" onclick="toggleVote()">START GŁOSOWANIA</button>
+            <input type="text" id="tytul" placeholder="Temat uchwały" style="width:100%; padding:10px; box-sizing:border-box; margin-bottom:10px;">
+            <button id="voteBtn" class="btn btn-green" onclick="toggleVote()">START GŁOSOWANIA</button>
         </div>
-
-        <div class="card">
-            <h3>🖐 Do głosu (Ręce)</h3>
-            <div id="receList" class="scroll-area"></div>
-            <button class="btn-blue" style="font-size: 10px;" onclick="czyscRece()">OPUŚĆ WSZYSTKIE RĘCE</button>
+        <div class="card" style="margin-top:20px;">
+            <h3>🖐 Kolejka do głosu</h3>
+            <div id="listRece" class="scroll"></div>
         </div>
-
-        <button class="btn-red" onclick="zakonczSesje()" style="margin-top: auto;">ZAMKNIJ SYSTEM</button>
+        <button class="btn btn-red" style="margin-top:auto" onclick="zakonczSesje()">ZAKOŃCZ SESJĘ</button>
     </div>
 
-    <div class="main" id="main">
+    <div class="main">
         <div class="card">
-            <h3>Obecność i Kworum: <span id="qStatus">?</span></h3>
-            <div id="kworumBox"><div id="kworumBar"></div></div>
-            <div class="scroll-area"><div id="listObecni"></div></div>
+            <h3>Obecność (<span id="qText">0/0</span>)</h3>
+            <div id="kworumBar"><div id="kworumFill"></div></div>
+            <div id="listObecni" class="scroll"></div>
         </div>
-
         <div class="card">
-            <h3>📝 Wnioski Radnych</h3>
-            <div id="listWnioski" class="scroll-area"></div>
-            <button class="btn-purple" style="font-size: 10px;" onclick="czyscWnioski()">WYCZYŚĆ LISTĘ</button>
+            <h3>📝 Wnioski</h3>
+            <div id="listWnioski" class="scroll"></div>
         </div>
-
-        <div class="card">
-            <button id="bazaToggleBtn" onclick="toggleBazaView()">⚙ ZARZĄDZAJ BAZĄ RADNYCH ▼</button>
-            <div id="bazaContent">
-                <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-                    <input type="text" id="newCode" placeholder="Kod" style="flex: 1;">
-                    <input type="text" id="newName" placeholder="Imię i Nazwisko" style="flex: 2;">
-                    <button class="btn-blue" style="width: 80px;" onclick="dodajRadnego()">DODAJ</button>
-                </div>
-                <div class="scroll-area" id="listBaza"></div>
+        <div class="card" style="grid-column: span 2;">
+            <button class="btn" style="background:#eee" onclick="toggleBaza()">Zarządzaj Bazą Radnych ▼</button>
+            <div id="baza" style="display:none; margin-top:10px;">
+                <input type="text" id="newC" placeholder="Kod"> <input type="text" id="newN" placeholder="Nazwisko">
+                <button onclick="dodajR()">Dodaj</button>
+                <div id="listBaza" class="scroll"></div>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, getDoc, collection, getDocs, deleteDoc, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc, collection, getDocs, deleteDoc, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM",
-            authDomain: "votelive-f469d.firebaseapp.com",
-            projectId: "votelive-f469d",
-            appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" 
-        };
-
+        const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
-        // Funkcja rozwijania bazy
-        window.toggleBazaView = () => {
-            const content = document.getElementById('bazaContent');
-            const btn = document.getElementById('bazaToggleBtn');
-            if (content.style.display === "block") {
-                content.style.display = "none";
-                btn.innerText = "⚙ ZARZĄDZAJ BAZĄ RADNYCH ▼";
-            } else {
-                content.style.display = "block";
-                btn.innerText = "⚙ ZARZĄDZAJ BAZĄ RADNYCH ▲";
-            }
-        };
-
-        onSnapshot(docRef, async (snap) => {
+        onSnapshot(docRef, async snap => {
             const data = snap.data(); if(!data) return;
-            const isClosed = data.status === "reset_wszystkich";
-
-            document.getElementById('start-screen').style.display = isClosed ? "flex" : "none";
-            document.getElementById('sidebar').style.display = isClosed ? "none" : "flex";
-            document.getElementById('main').style.display = isClosed ? "none" : "flex";
-
-            const actionBtn = document.getElementById('actionBtn');
-            actionBtn.innerText = data.status === "otwarte" ? "ZAKOŃCZ GŁOSOWANIE" : "START GŁOSOWANIA";
-            actionBtn.className = data.status === "otwarte" ? "btn-red" : "btn-green";
-
-            // Kworum
-            const kodySnap = await getDocs(collection(db, "kody_dostepu"));
-            const l_max = kodySnap.size;
-            const l_ob = data.obecni?.length || 0;
-            const wym = Math.floor(l_max / 2) + 1;
+            document.getElementById('start').style.display = data.status === "reset_wszystkich" ? "flex" : "none";
             
-            document.getElementById('kworumBar').style.width = (l_max > 0 ? (l_ob / l_max) * 100 : 0) + "%";
-            document.getElementById('qStatus').innerText = `${l_ob}/${l_max}`;
-            document.getElementById('kworumBar').style.background = l_ob >= wym ? "#27ae60" : "#e67e22";
+            const vBtn = document.getElementById('voteBtn');
+            vBtn.innerText = data.status === "otwarte" ? "ZATRZYMAJ GŁOSOWANIE" : "START GŁOSOWANIA";
+            vBtn.className = data.status === "otwarte" ? "btn btn-red" : "btn btn-green";
 
-            // Listy
-            document.getElementById('listObecni').innerHTML = (data.obecni || []).map(n => `<div class="item">${n} <button class="del-btn" onclick="usunObecnego('${n}')">Wyloguj</button></div>`).join('');
-            document.getElementById('receList').innerHTML = (data.rece || []).map((r, i) => `<div class="item"><b>${i+1}. ${r}</b> <button onclick="usunReke('${r}')">Głos</button></div>`).join('');
-            document.getElementById('listWnioski').innerHTML = (data.wnioski || []).map(w => `<div class="wniosek-item"><small>${w.czas} - <b>${w.radny}</b></small><br>${w.tresc}</div>`).join('');
+            const kody = await getDocs(collection(db, "kody_dostepu"));
+            const l_max = kody.size; const l_ob = data.obecni?.length || 0;
+            document.getElementById('kworumFill').style.width = (l_ob/l_max*100) + "%";
+            document.getElementById('qText').innerText = `${l_ob}/${l_max}`;
+
+            document.getElementById('listObecni').innerHTML = (data.obecni || []).map(n => `<div class="item">${n}</div>`).join('');
+            document.getElementById('listRece').innerHTML = (data.rece || []).map(r => `<div class="item">${r} <button onclick="usunR('${r}')">Głos</button></div>`).join('');
+            document.getElementById('listWnioski').innerHTML = (data.wnioski || []).map(w => `<div style="padding:5px; border-bottom:1px solid #eee; font-size:11px;"><b>${w.radny}</b>: ${w.tresc}</div>`).join('');
         });
 
-        onSnapshot(collection(db, "kody_dostepu"), (s) => {
+        onSnapshot(collection(db, "kody_dostepu"), s => {
             document.getElementById('listBaza').innerHTML = "";
-            s.forEach(d => {
-                document.getElementById('listBaza').innerHTML += `<div class="item"><span><b>${d.id}</b> ${d.data().nazwisko}</span><button class="del-btn" onclick="usunZBazy('${d.id}')">Usuń</button></div>`;
-            });
+            s.forEach(d => { document.getElementById('listBaza').innerHTML += `<div class="item">${d.id} - ${d.data().nazwisko} <button onclick="delR('${d.id}')">X</button></div>`; });
         });
 
-        window.otworzSesje = async () => { await updateDoc(docRef, { status: "logowanie", obecni: [], wyniki: {}, lista_glosow: {}, rece: [], wnioski: [], tytul: "Sesja" }); };
-        
+        window.otworzSesje = async () => await updateDoc(docRef, { status: "logowanie", obecni: [], rece: [], wnioski: [], wyniki: {}, lista_glosow: {} });
         window.toggleVote = async () => {
             const s = await getDoc(docRef);
-            if(s.data().status === "otwarte") {
-                await updateDoc(docRef, { status: "zamkniete" });
-            } else {
-                const t = document.getElementById('tytul').value || "Głosowanie";
-                await updateDoc(docRef, { tytul: t, status: "otwarte", wyniki: {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} });
-            }
+            if(s.data().status === "otwarte") await updateDoc(docRef, { status: "zamkniete" });
+            else await updateDoc(docRef, { status: "otwarte", tytul: document.getElementById('tytul').value || "Głosowanie", wyniki: {"ZA":0, "PRZECIW":0, "WSTRZYMAŁO SIĘ":0}, lista_glosow: {} });
         };
-
-        window.usunReke = async (n) => { await updateDoc(docRef, { rece: arrayRemove(n) }); };
-        window.czyscRece = async () => { if(confirm("Opuścić ręce?")) await updateDoc(docRef, { rece: [] }); };
-        window.czyscWnioski = async () => { if(confirm("Wyczyścić wnioski?")) await updateDoc(docRef, { wnioski: [] }); };
-        window.dodajRadnego = async () => {
-            const c = document.getElementById('newCode').value; const n = document.getElementById('newName').value;
-            if(c && n) { await setDoc(doc(db, "kody_dostepu", c), { nazwisko: n }); document.getElementById('newCode').value=""; document.getElementById('newName').value=""; }
-        };
-        window.usunZBazy = async (id) => { if(confirm("Usuń radnego?")) await deleteDoc(doc(db, "kody_dostepu", id)); };
-        window.usunObecnego = async (n) => { const s = await getDoc(docRef); await updateDoc(docRef, { obecni: s.data().obecni.filter(x => x !== n) }); };
-        window.zakonczSesje = async () => {
-            if(confirm("Zakończyć sesję?")) await updateDoc(docRef, { status: "reset_wszystkich", obecni: [], rece: [], wnioski: [] });
-        };
+        window.usunR = async r => await updateDoc(docRef, { rece: arrayRemove(r) });
+        window.zakonczSesje = async () => { if(confirm("Na pewno?")) await updateDoc(docRef, { status: "reset_wszystkich" }); };
+        window.toggleBaza = () => { const b = document.getElementById('baza'); b.style.display = b.style.display === "none" ? "block" : "none"; };
+        window.dodajR = async () => { await setDoc(doc(db, "kody_dostepu", document.getElementById('newC').value), { nazwisko: document.getElementById('newN').value }); };
+        window.delR = async id => await deleteDoc(doc(db, "kody_dostepu", id));
     </script>
 </body>
 </html>
