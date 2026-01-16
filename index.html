@@ -11,8 +11,7 @@
         .container { width: 100%; max-width: 450px; }
         
         .id-card { 
-            background: linear-gradient(135deg, #4f46e5, #818cf8); 
-            color: white; padding: 25px; border-radius: 24px; 
+            background: linear-gradient(135deg, #4f46e5, #818cf8); color: white; padding: 25px; border-radius: 24px; 
             cursor: pointer; transition: 0.3s; position: relative; overflow: hidden;
             box-shadow: 0 15px 30px rgba(79, 70, 229, 0.2); margin-bottom: 20px;
         }
@@ -24,20 +23,18 @@
         .btn-main { background: var(--p); color: white; }
         .btn-za { background: var(--s); color: white; }
         .btn-przeciw { background: var(--d); color: white; }
-        .btn-wstrzymuje { background: #f59e0b; color: white; }
         
-        #voiceAlert { 
-            display:none; background: var(--s); color: white; padding: 15px; border-radius: 18px; 
-            text-align: center; font-weight: 800; margin-bottom: 15px; animation: pulse 2s infinite; 
-        }
+        /* Styl oddanego głosu */
+        .btn.selected { border: 4px solid #f59e0b; transform: scale(1.02); box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+        .btn.not-selected { opacity: 0.4; filter: grayscale(0.5); }
+
+        #voiceAlert { display:none; background: var(--s); color: white; padding: 15px; border-radius: 18px; text-align: center; font-weight: 800; margin-bottom: 15px; animation: pulse 2s infinite; }
         @keyframes pulse { 0% {transform:scale(1);} 50% {transform:scale(1.02);} 100% {transform:scale(1);} }
 
         .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; padding:20px; backdrop-filter: blur(5px); }
         .modal-content { background:white; padding:30px; border-radius:28px; width:100%; max-width:400px; }
         
         input { width: 100%; padding: 18px; border-radius: 18px; border: 2px solid #e2e8f0; text-align: center; font-size: 18px; box-sizing: border-box; font-family: inherit; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--p); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -50,11 +47,12 @@
 
         <div id="profileArea" style="display:none;">
             <div class="id-card" onclick="toggleDetails()">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
                     <div><h2 id="userNameDisplay" style="margin:0;">-</h2><p id="userPosDisplay" style="opacity:0.8; font-size:12px;"></p></div>
-                    <div style="font-size:30px;">🪪</div>
+                    <button onclick="event.stopPropagation(); logout();" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">🚪</button>
                 </div>
                 <div id="idDetails" class="id-details">
+                    <p style="font-size:10px; opacity:0.7;">HISTORIA WNIOSKÓW:</p>
                     <div id="userHistory" style="font-size:11px;"></div>
                 </div>
             </div>
@@ -65,7 +63,6 @@
         </div>
 
         <div id="waitingArea" class="card" style="display:none; text-align:center;">
-            <div class="loader"></div>
             <h3>Poczekalnia</h3>
             <p>Czekaj na akceptację administratora...</p>
         </div>
@@ -73,8 +70,9 @@
         <div id="voteArea" style="display:none;">
             <div id="voiceAlert">📣 MASZ GŁOS!</div>
             <div class="card">
-                <h2 id="vTitle" style="text-align:center; margin-bottom:25px;">Czekam na punkt obrad...</h2>
+                <h2 id="vTitle" style="text-align:center; margin-bottom:25px;">-</h2>
                 <div id="btns"></div>
+                <div id="voteStatus" style="text-align:center; font-weight:800; color:var(--d); margin-top:10px;"></div>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <button id="handBtn" class="btn" style="background:#f1f5f9;" onclick="toggleHand()">🖐 RĘKA</button>
@@ -117,13 +115,13 @@
             document.getElementById('profileArea').style.display = "block";
             document.getElementById('userNameDisplay').innerText = myData.imie + " " + myData.nazwisko;
             document.getElementById('userPosDisplay').innerText = myData.stanowisko;
+            document.getElementById('userHistory').innerHTML = (myData.wnioski || []).slice(-3).map(w => `<div>• ${w.tytul}</div>`).join('');
 
             onSnapshot(docRef, s => {
                 const d = s.data(); if(!d) return;
                 const myStatus = d.statusy_radnych ? d.statusy_radnych[myCode] : null;
                 const fullName = myData.imie + " " + myData.nazwisko;
 
-                // Powiadomienie o głosie
                 document.getElementById('voiceAlert').style.display = d.activeSpeaker === fullName ? "block" : "none";
 
                 if (myStatus === "zaakceptowany") {
@@ -139,6 +137,7 @@
                     document.getElementById('waitingArea').style.display = "none";
                     document.getElementById('profileArea').style.display = "block";
                 }
+                document.getElementById('sessionInfo').innerText = d.status === "logowanie" ? "Sesja otwarta - dołącz" : "Sesja zamknięta";
                 document.getElementById('joinBtn').disabled = d.status !== "logowanie";
             });
 
@@ -153,6 +152,11 @@
                 localStorage.setItem("rCode", c);
                 location.reload();
             }
+        };
+
+        window.logout = async () => {
+            await updateDoc(doc(db, "kody_dostepu", myCode), { isOnline: false });
+            localStorage.clear(); location.reload();
         };
 
         window.toggleDetails = () => document.getElementById('idDetails').classList.toggle('open');
@@ -173,17 +177,31 @@
         };
 
         function syncGlosowanie(d) {
-            const div = document.getElementById('btns'); div.innerHTML = "";
-            document.getElementById('vTitle').innerText = d.status === "otwarte" ? d.tytul : "Oczekiwanie...";
+            const div = document.getElementById('btns');
+            const statusDiv = document.getElementById('voteStatus');
+            div.innerHTML = "";
+            
             if(d.status === "otwarte") {
+                statusDiv.innerText = "";
+                document.getElementById('vTitle').innerText = d.tytul;
                 const juz = d.lista_glosow && d.lista_glosow[myCode];
+                
                 d.opcjeGlosowania.forEach(o => {
-                    const b = document.createElement('button'); b.innerText = o;
+                    const b = document.createElement('button');
+                    b.innerText = o;
                     b.className = `btn ${o=='ZA'?'btn-za':o=='PRZECIW'?'btn-przeciw':'btn-main'}`;
-                    if(juz) b.disabled = true;
+                    
+                    if(juz) {
+                        b.disabled = true;
+                        b.className += (juz === o) ? " selected" : " not-selected";
+                    }
+                    
                     b.onclick = () => updateDoc(docRef, { [`wyniki.${o}`]: increment(1), [`lista_glosow.${myCode}`]: o });
                     div.appendChild(b);
                 });
+            } else {
+                document.getElementById('vTitle').innerText = "Głosowanie zakończone";
+                statusDiv.innerText = "Czekaj na kolejny punkt obrad...";
             }
         }
 
