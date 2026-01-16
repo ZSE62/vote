@@ -7,242 +7,141 @@
     <style>
         :root { --p: #4f46e5; --s: #10b981; --d: #ef4444; --dark: #0f172a; --bg: #f1f5f9; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
         #dashboard { position: fixed; inset: 0; background: var(--dark); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .welcome-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 90%; max-width: 1000px; }
-        .welcome-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 32px; text-align: center; cursor: pointer; transition: 0.3s; }
-        .welcome-card:hover { background: rgba(255,255,255,0.1); transform: translateY(-5px); }
-
-        .sidebar { width: 350px; background: var(--dark); color: white; padding: 25px; display: flex; flex-direction: column; overflow-y: auto; }
+        .welcome-card { background: rgba(255,255,255,0.05); padding: 30px; border-radius: 32px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .sidebar { width: 350px; background: var(--dark); color: white; padding: 25px; display: flex; flex-direction: column; }
         .main { flex: 1; padding: 30px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .full { grid-column: span 2; }
-        .hidden { display: none !important; }
-
-        .btn { padding: 12px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: inherit; margin-bottom: 5px; }
-        .btn-p { background: var(--p); color: white; width: 100%; }
+        .btn { padding: 12px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-bottom: 5px; font-family: inherit; }
         .btn-s { background: var(--s); color: white; }
         .btn-d { background: var(--d); color: white; }
-        input, select { padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; width: 100%; margin-bottom: 10px; box-sizing: border-box; font-family: inherit; }
-
-        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #f8fafc; border-radius: 14px; margin-bottom: 8px; border: 1px solid #e2e8f0; color: #000; }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 12px; color: #64748b; font-size: 11px; border-bottom: 2px solid #f1f5f9; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #000; }
+        .hidden { display: none !important; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8fafc; border-radius: 12px; margin-bottom: 5px; color: #000; }
+        input, select { padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; width: 100%; margin-bottom: 10px; font-family: inherit; }
     </style>
 </head>
 <body>
 
     <div id="dashboard">
-        <h1 style="font-size: 40px; letter-spacing: -2px; margin-bottom: 40px;">@mperek.</h1>
+        <h1 style="font-size: 40px; letter-spacing: -2px;">@mperek.</h1>
         <div class="welcome-grid">
-            <div class="welcome-card" onclick="startNewSession()">
-                <div style="font-size: 40px;">🗳️</div>
-                <h3>Nowa Sesja</h3>
-                <p style="color: #94a3b8; font-size: 12px;">Prowadzenie obrad na żywo</p>
-            </div>
-            <div class="welcome-card" onclick="showView('archiveView')">
-                <div style="font-size: 40px;">📂</div>
-                <h3>Archiwum</h3>
-                <p style="color: #94a3b8; font-size: 12px;">Raporty i wyniki historyczne</p>
-            </div>
-            <div class="welcome-card" onclick="showView('databaseView')">
-                <div style="font-size: 40px;">👥</div>
-                <h3>Baza Radnych</h3>
-                <p style="color: #94a3b8; font-size: 12px;">Zarządzanie kodami i danymi</p>
-            </div>
+            <div class="welcome-card" onclick="startNewSession()"><h3>Nowa Sesja</h3></div>
+            <div class="welcome-card" onclick="showView('archiveView')"><h3>Archiwum</h3></div>
+            <div class="welcome-card" onclick="showView('databaseView')"><h3>Baza Radnych</h3></div>
         </div>
     </div>
 
     <div id="sidebar" class="sidebar hidden">
-        <button class="btn btn-d" onclick="window.location.reload()" style="margin-bottom:20px;">Wróć do Menu</button>
-        <small style="color: #94a3b8; font-weight: 800;">KONTROLA GŁOSOWANIA</small>
-        <div class="card" style="background: rgba(255,255,255,0.05); color: white; border: none; margin: 10px 0;">
-            <input type="text" id="vTitle" placeholder="Temat punktu obrad...">
-            <select id="vType" onchange="toggleCustomOptions()">
-                <option value="standard">ZA / PRZECIW / WSTRZ.</option>
-                <option value="imienne">Głosowanie imienne (Własne opcje)</option>
+        <button class="btn btn-d" onclick="exitToMenu()">WYJDŹ DO MENU</button>
+        <div class="card" style="background:none; color:white; border:1px solid rgba(255,255,255,0.1); margin-top:20px;">
+            <input type="text" id="vTitle" placeholder="Temat obrad...">
+            <select id="vType" onchange="document.getElementById('customOpt').classList.toggle('hidden', this.value!='imienne')">
+                <option value="standard">Standard (ZA/PRZ/WST)</option>
+                <option value="imienne">Imienne (Własne)</option>
             </select>
-            <div id="customOptionsArea" class="hidden">
-                <input type="text" id="vOptions" placeholder="Opcje oddzielone przecinkiem (np. Tak, Nie, Może)">
-            </div>
-            <button id="vBtn" class="btn btn-s" style="width:100%" onclick="toggleVote()">START GŁOSOWANIA</button>
+            <input type="text" id="customOpt" class="hidden" placeholder="Opcje (po przecinku)">
+            <button id="vBtn" class="btn btn-s" onclick="toggleVote()">START GŁOSOWANIA</button>
         </div>
-        <button class="btn btn-d" style="margin-top:auto;" onclick="endFullSession()">ZAKOŃCZ I ZARCHIWIZUJ SESJĘ</button>
+        <button class="btn btn-d" style="margin-top:auto" onclick="endFullSession()">ZAKOŃCZ I ARCHIWIZUJ</button>
     </div>
 
     <div id="sessionView" class="main hidden">
+        <div class="card"><h3>⌛ Poczekalnia</h3><div id="waitingList"></div></div>
+        <div class="card"><h3>👥 Obecni</h3><div id="presenceList"></div></div>
+        <div class="card"><h3>🖐 Ręce</h3><div id="handsList"></div></div>
+        <div class="card"><h3>📝 Wnioski</h3><div id="wnioskiList"></div></div>
+    </div>
+
+    <div id="databaseView" class="main hidden" style="grid-template-columns: 1fr;">
         <div class="card">
-            <h3>⌛ Poczekalnia</h3>
-            <div id="waitingList"></div>
-        </div>
-        <div class="card">
-            <h3>👥 Obecni na sesji</h3>
-            <div id="presenceList"></div>
-        </div>
-        <div class="card full">
-            <h3>🖐 Głosy i Wnioski</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div id="handsList"></div>
-                <div id="wnioskiList"></div>
-            </div>
+            <button class="btn btn-d" onclick="exitToMenu()" style="width:200px">POWRÓT</button>
+            <h2>Zarządzanie Radnymi</h2>
+            <div id="dbContent"></div>
         </div>
     </div>
 
-    <div id="databaseView" class="main hidden full">
-        <div class="card full">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2>👥 Zarządzanie Radnymi</h2>
-                <button class="btn btn-d" onclick="window.location.reload()">POWRÓT DO MENU</button>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px;">
-                <input type="text" id="rCode" placeholder="KOD">
-                <input type="text" id="rImie" placeholder="Imię">
-                <input type="text" id="rNazwisko" placeholder="Nazwisko">
-                <input type="text" id="rPos" placeholder="Stanowisko">
-                <button class="btn btn-p" onclick="addCouncillor()">Dodaj Radnego</button>
-            </div>
-            <table id="councillorsTable">
-                <thead><tr><th>KOD</th><th>IMIĘ I NAZWISKO</th><th>STANOWISKO</th><th>FREKWENCJA</th><th>AKCJA</th></tr></thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div id="archiveView" class="main hidden full">
-        <div class="card full">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2>📂 Archiwum Sesji</h2>
-                <button class="btn btn-d" onclick="window.location.reload()">POWRÓT DO MENU</button>
-            </div>
-            <div id="archiveList"></div>
-        </div>
+    <div id="archiveView" class="main hidden" style="grid-template-columns: 1fr;">
+        <div class="card"><button class="btn btn-d" onclick="exitToMenu()" style="width:200px">POWRÓT</button><h2>Archiwum</h2><div id="archContent"></div></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, deleteDoc, collection, getDocs, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, getDoc, collection, getDocs, arrayRemove, increment, deleteField } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyBo7bSndks_GClZBvnDMIsdVRWw5oCWiRM", authDomain: "votelive-f469d.firebaseapp.com", projectId: "votelive-f469d", appId: "1:959356764271:web:76f0284a0a1ce6e9874d9a" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const docRef = doc(db, "ankiet", "vote");
 
-        window.showView = (viewId) => {
+        // Blokada odświeżania - powrót do widoku
+        const lastView = localStorage.getItem('panelView');
+        if(lastView && lastView !== 'dashboard') showView(lastView);
+
+        window.showView = (id) => {
+            localStorage.setItem('panelView', id);
             document.getElementById('dashboard').classList.add('hidden');
-            document.querySelectorAll('.main, .sidebar').forEach(v => v.classList.add('hidden'));
-            document.getElementById(viewId).classList.remove('hidden');
-            if(viewId === 'sessionView') document.getElementById('sidebar').classList.remove('hidden');
+            document.querySelectorAll('.main, .sidebar').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'sessionView') document.getElementById('sidebar').classList.remove('hidden');
         };
 
-        window.toggleCustomOptions = () => {
-            const type = document.getElementById('vType').value;
-            document.getElementById('customOptionsArea').classList.toggle('hidden', type !== 'imienne');
-        };
+        window.exitToMenu = () => { localStorage.setItem('panelView', 'dashboard'); location.reload(); };
 
-        // --- BAZA ---
-        onSnapshot(collection(db, "kody_dostepu"), s => {
-            const tbody = document.querySelector('#councillorsTable tbody');
-            tbody.innerHTML = "";
-            s.forEach(d => {
-                const r = d.data();
-                tbody.innerHTML += `<tr><td>${d.id}</td><td>${r.imie} ${r.nazwisko}</td><td>${r.stanowisko}</td><td>${r.sesjeObecne}/${r.sesjeWszystkie}</td><td><button onclick="window.deleteC('${d.id}')">Usuń</button></td></tr>`;
-            });
-        });
-
-        window.addCouncillor = async () => {
-            const id = document.getElementById('rCode').value;
-            if(!id) return alert("Podaj kod!");
-            await setDoc(doc(db, "kody_dostepu", id), {
-                imie: document.getElementById('rImie').value, nazwisko: document.getElementById('rNazwisko').value,
-                stanowisko: document.getElementById('rPos').value, sesjeObecne: 0, sesjeWszystkie: 0, isOnline: false, lastActive: 0, wnioski: []
-            });
-            alert("Radny dodany.");
-        };
-
-        window.deleteC = async (id) => { if(confirm("Usunąć radnego?")) await deleteDoc(doc(db, "kody_dostepu", id)); };
-
-        // --- SESJA ---
         window.startNewSession = async () => {
-            if(!confirm("Rozpocząć nową sesję?")) return;
-            const rSnap = await getDocs(collection(db, "kody_dostepu"));
-            rSnap.forEach(r => updateDoc(doc(db, "kody_dostepu", r.id), { sesjeWszystkie: increment(1) }));
-            await updateDoc(docRef, { status: "logowanie", statusy_radnych: {}, poczekalnia_lista: {}, lista_glosow: {}, rece: [], wnioski: [], tytul: "Brak aktywnego punktu" });
+            await updateDoc(docRef, { status: "logowanie", statusy_radnych: {}, poczekalnia_lista: {}, activeSpeaker: "" });
             showView('sessionView');
         };
 
         onSnapshot(docRef, s => {
             const d = s.data(); if(!d) return;
-            
-            // Poczekalnia
-            const waitDiv = document.getElementById('waitingList'); waitDiv.innerHTML = "";
+            const waitList = document.getElementById('waitingList'); waitList.innerHTML = "";
             Object.entries(d.poczekalnia_lista || {}).forEach(([code, info]) => {
-                waitDiv.innerHTML += `<div class="user-row"><span>${info.nazwa}</span> <button class="btn-s" onclick="window.acceptR('${code}')">DOPUŚĆ</button></div>`;
+                waitList.innerHTML += `<div class="user-row">${info.nazwa} <button onclick="window.accept('${code}')" class="btn-s" style="width:80px">DOPUŚĆ</button></div>`;
             });
 
-            // Obecni
-            const presDiv = document.getElementById('presenceList'); presDiv.innerHTML = "";
-            Object.entries(d.statusy_radnych || {}).forEach(([code, status]) => {
-                if(status === "zaakceptowany") {
-                    const glos = d.lista_glosow[code] ? `✅ (${d.lista_glosow[code]})` : "⏳ ...";
-                    presDiv.innerHTML += `<div class="user-row"><span>${code}: ${glos}</span> <button class="btn-d" onclick="window.kickR('${code}')" style="padding:5px">USUŃ</button></div>`;
-                }
+            const presList = document.getElementById('presenceList'); presList.innerHTML = "";
+            Object.entries(d.statusy_radnych || {}).forEach(([code, stat]) => {
+                if(stat === 'zaakceptowany') presList.innerHTML += `<div class="user-row">${code} <button onclick="window.kick('${code}')" class="btn-d" style="width:80px">USUŃ</button></div>`;
             });
 
-            // Głosy/Wnioski
-            document.getElementById('handsList').innerHTML = (d.rece || []).map(n => `<div class="user-row">🖐 ${n} <button onclick="window.lowerHand('${n}')">OK</button></div>`).join('');
-            document.getElementById('wnioskiList').innerHTML = (d.wnioski || []).map(w => `<div class="card" style="font-size:12px; margin-bottom:5px;"><b>${w.radny}</b>: ${w.tytul}</div>`).join('');
-            document.getElementById('vBtn').innerText = d.status === "otwarte" ? "ZAKOŃCZ GŁOSOWANIE" : "START GŁOSOWANIA";
+            document.getElementById('handsList').innerHTML = (d.rece || []).map(n => `
+                <div class="user-row">${n} <button onclick="window.giveVoice('${n}')" class="btn-s" style="width:100px">DAJ GŁOS</button></div>
+            `).join('');
+
+            document.getElementById('wnioskiList').innerHTML = (d.wnioski || []).map(w => `<div class="user-row"><b>${w.radny}</b>: ${w.tytul}</div>`).join('');
+            document.getElementById('vBtn').innerText = d.status === "otwarte" ? "STOP GŁOSOWANIE" : "START GŁOSOWANIA";
         });
 
-        window.acceptR = async (code) => {
+        window.accept = async (code) => {
             await updateDoc(doc(db, "kody_dostepu", code), { sesjeObecne: increment(1) });
-            const s = await getDocs(collection(db, "ankiet")); // Pobranie stanu do usunięcia z mapy
-            let d = (await getDocs(collection(db, "ankiet"))).docs[0].data();
-            let p = d.poczekalnia_lista; delete p[code];
-            await updateDoc(docRef, { [`statusy_radnych.${code}`]: "zaakceptowany", poczekalnia_lista: p });
+            await updateDoc(docRef, { [`statusy_radnych.${code}`]: "zaakceptowany", [`poczekalnia_lista.${code}`]: deleteField() });
         };
 
-        window.kickR = async (code) => {
-            let d = (await getDocs(collection(db, "ankiet"))).docs[0].data();
-            let sr = d.statusy_radnych; delete sr[code];
-            await updateDoc(docRef, { statusy_radnych: sr });
+        window.kick = async (code) => { await updateDoc(docRef, { [`statusy_radnych.${code}`]: deleteField() }); };
+
+        window.giveVoice = async (name) => {
+            await updateDoc(docRef, { activeSpeaker: name, rece: arrayRemove(name) });
+            setTimeout(() => updateDoc(docRef, { activeSpeaker: "" }), 10000); // Głos wygasa po 10s lub do ręcznej zmiany
         };
 
         window.toggleVote = async () => {
-            const d = (await getDocs(collection(db, "ankiet"))).docs[0].data();
+            const d = (await getDoc(docRef)).data();
             if(d.status === "otwarte") {
                 await updateDoc(docRef, { status: "zamkniete" });
             } else {
                 const type = document.getElementById('vType').value;
-                const options = type === 'standard' ? ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"] : document.getElementById('vOptions').value.split(',').map(o => o.trim());
-                let wyniki = {}; options.forEach(o => wyniki[o] = 0);
-                await updateDoc(docRef, { 
-                    status: "otwarte", typ: type, opcjeGlosowania: options,
-                    tytul: document.getElementById('vTitle').value || "Głosowanie",
-                    wyniki: wyniki, lista_glosow: {}
-                });
+                const opts = type === 'standard' ? ["ZA", "PRZECIW", "WSTRZYMAŁO SIĘ"] : document.getElementById('customOpt').value.split(',');
+                let w = {}; opts.forEach(o => w[o.trim()] = 0);
+                await updateDoc(docRef, { status: "otwarte", tytul: document.getElementById('vTitle').value, opcjeGlosowania: opts.map(o=>o.trim()), wyniki: w, lista_glosow: {} });
             }
         };
 
-        window.lowerHand = (n) => updateDoc(docRef, { rece: arrayRemove(n) });
-
         window.endFullSession = async () => {
-            if(!confirm("Zarchiwizować i zakończyć sesję?")) return;
-            const d = (await getDocs(collection(db, "ankiet"))).docs[0].data();
-            await setDoc(doc(db, "archiwum", "SESJA_" + Date.now()), d);
-            await updateDoc(docRef, { status: "zakończona", statusy_radnych: {}, poczekalnia_lista: {}, lista_glosow: {} });
-            window.location.reload();
-        };
-
-        // --- ARCHIWUM ---
-        showView.archive = async () => {
-            const snap = await getDocs(collection(db, "archiwum"));
-            const list = document.getElementById('archiveList'); list.innerHTML = "";
-            snap.forEach(d => {
-                const data = d.data();
-                list.innerHTML += `<div class="card"><b>Sesja: ${d.id}</b><br><small>Liczba wniosków: ${(data.wnioski || []).length}</small></div>`;
-            });
+            const d = (await getDoc(docRef)).data();
+            await setDoc(doc(db, "archiwum", "SESJA_"+Date.now()), d);
+            await updateDoc(docRef, { status: "zakończona", statusy_radnych: {}, poczekalnia_lista: {}, activeSpeaker: "" });
+            exitToMenu();
         };
     </script>
 </body>
